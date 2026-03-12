@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ event.title }} - Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .map-container { height: 300px; background: #eee; border-radius: 15px; overflow: hidden; }
+        .event-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 0; border-radius: 0 0 30px 30px; }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="event-header text-center">
+        <div class="container">
+            <h1 class="fw-bold">{{ event.title }}</h1>
+            <p class="lead"><i class="bi bi-bank me-2"></i>Organized by {{ event.society.name }}</p>
+        </div>
+    </div>
+
+    <div class="container mt-n5">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 20px;">
+                    <h5 class="fw-bold mb-3">Description</h5>
+                    <p class="text-muted">{{ event.description }}</p>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <p class="small text-muted mb-0">Date</p>
+                            <p class="fw-bold">{{ event.start_time|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-4">
+                            <p class="small text-muted mb-0">Time</p>
+                            <p class="fw-bold">{{ event.start_time|date:"H:i" }}</p>
+                        </div>
+                        <div class="col-4">
+                            <p class="small text-muted mb-0">Location</p>
+                            <p class="fw-bold">{{ event.location }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 20px;">
+                    <h5 class="fw-bold mb-3">Location Map</h5>
+                    <div class="map-container mb-3">
+                        <iframe width="100%" height="100%" frameborder="0" style="border:0" 
+                            src="https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q={{ event.location }}" allowfullscreen>
+                        </iframe>
+                    </div>
+                    {% if already_has_ticket %}
+                        <button class="btn btn-secondary w-100 rounded-pill disabled">Already Booked</button>
+                    {% else %}
+                        <form method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill shadow">Book Ticket Now</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
