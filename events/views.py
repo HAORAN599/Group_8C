@@ -57,9 +57,9 @@ def home(request):
             Q(description__icontains=query) | 
             Q(location__icontains=query) |
             Q(society__name__icontains=query)
-        ).distinct().order_by('-start_time')
+        ).distinct().order_by('start_time')
     else:
-        events = Event.objects.all().order_by('-start_time')
+        events = Event.objects.all().order_by('start_time')
     return render(request, 'events/home.html', {'events': events, 'query': query})
 
 @login_required
