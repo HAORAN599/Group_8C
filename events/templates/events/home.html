@@ -1,169 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - University Event Hub</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <style>
-        :root { 
-            --primary-color: #4361ee; 
-            --accent-color: #4cc9f0;
-            --text-dark: #2b2d42;
-        }
-        body { background-color: #fcfcfd; font-family: 'Segoe UI', Roboto, sans-serif; }
-        
-        .navbar { 
-            background: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .navbar-brand { font-size: 1.5rem; letter-spacing: -1px; background: linear-gradient(45deg, var(--primary-color), var(--accent-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+{% extends 'events/base.html' %}
 
-        .search-container { max-width: 700px; margin: 0 auto 4rem; }
-        .search-bar { 
-            border-radius: 20px 0 0 20px !important; 
-            padding: 15px 30px; 
-            border: 2px solid #eee; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-            transition: all 0.3s;
-        }
-        .search-bar:focus { border-color: var(--primary-color); box-shadow: 0 10px 25px rgba(67, 97, 238, 0.1); }
-        .search-btn { border-radius: 0 20px 20px 0 !important; background: var(--primary-color); border: none; padding: 0 30px; }
+{% block title %}Home - University Event Hub{% endblock %}
+{% block body_class %}body-home{% endblock %}
 
-        .event-card { 
-            border: none; 
-            border-radius: 20px; 
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            overflow: hidden;
-            background: white;
-            border: 1px solid rgba(0,0,0,0.03);
-        }
-        .event-card:hover { 
-            transform: translateY(-12px); 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.12); 
-        }
-        .event-img { height: 200px; object-fit: cover; width: 100%; transition: transform 0.5s; }
-        .event-card:hover .event-img { transform: scale(1.05); }
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-light sticky-top mb-4 navbar-custom">
+    <div class="container">
+        <a class="navbar-brand navbar-brand-custom fw-bold" href="{% url 'home' %}">Event Hub</a>
 
-        .date-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(5px);
-            padding: 8px 15px;
-            border-radius: 12px;
-            font-weight: 800;
-            color: var(--primary-color);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        .section-title { position: relative; padding-left: 20px; }
-        .section-title::before { 
-            content: ''; 
-            position: absolute; 
-            left: 0; top: 50%; 
-            transform: translateY(-50%); 
-            width: 6px; height: 30px; 
-            background: var(--primary-color); 
-            border-radius: 10px; 
-        }
-
-        .btn-view { background: #f0f3ff; color: var(--primary-color); font-weight: 600; border: none; }
-        .btn-view:hover { background: var(--primary-color); color: white; }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-light sticky-top mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="{% url 'home' %}">Event Hub</a>
-            <div class="d-flex align-items-center">
-                <a href="{% url 'my_tickets' %}" class="btn btn-light btn-sm me-3 rounded-pill px-3 shadow-sm">My Tickets</a>
-                <div class="d-flex align-items-center bg-light rounded-pill px-3 py-1 me-3">
-                    <i class="bi bi-person-circle text-primary me-2"></i>
-                    <span class="small fw-bold text-muted">{{ user.first_name }}</span>
-                </div>
-                <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm rounded-circle shadow-sm"><i class="bi bi-box-arrow-right"></i></a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container py-4">
-        <div class="text-center mb-5">
-            <h1 class="display-5 fw-bold text-dark mb-2">Discover Your Campus Life</h1>
-            <p class="text-secondary lead">Find interesting events and connect with societies.</p>
-        </div>
-
-        <div class="search-container">
-            <form method="GET" action="{% url 'home' %}">
-                <div class="input-group">
-                    <input type="text" name="q" class="form-control search-bar" placeholder="Try 'AI', 'Music' or 'Building A'..." value="{{ query|default:'' }}">
-                    <button class="btn btn-primary search-btn" type="submit">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-end mb-4 px-2">
-            <div>
-                <h2 class="section-title fw-bold h3 mb-0">{% if query %}Search Results{% else %}Upcoming Events{% endif %}</h2>
-                {% if query %}<p class="text-muted small mt-2">Showing events matching "{{ query }}"</p>{% endif %}
-            </div>
-            {% if query %}
-                <a href="{% url 'home' %}" class="btn btn-sm btn-outline-secondary rounded-pill">Reset All</a>
+        <div class="d-flex align-items-center">
+            {% if user.role == 'society_admin' or user.is_superuser %}
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-warning btn-sm me-3 rounded-pill px-3 shadow-sm fw-bold">
+                <i class="bi bi-speedometer2 me-1"></i>Admin Panel
+            </a>
             {% endif %}
+
+            <a href="{% url 'my_tickets' %}" class="btn btn-light btn-sm me-3 rounded-pill px-3 shadow-sm">My Tickets</a>
+
+            <div class="d-flex align-items-center bg-light rounded-pill px-3 py-1 me-3">
+                <i class="bi bi-person-circle text-primary me-2"></i>
+                <span class="small fw-bold text-muted">{{ user.first_name }}</span>
+            </div>
+
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm rounded-circle shadow-sm"><i class="bi bi-box-arrow-right"></i></a>
         </div>
 
-        <div class="row g-4">
-            {% for event in events %}
-            <div class="col-lg-4 col-md-6">
-                <div class="card event-card h-100">
-                    <div class="position-relative">
-                        {% if event.image %}
-                            <img src="{{ event.image.url }}" class="event-img" alt="event">
-                        {% else %}
-                            <div class="event-img d-flex align-items-center justify-content-center bg-light text-muted"><i class="bi bi-image fs-1 opacity-25"></i></div>
-                        {% endif %}
-                        <div class="date-badge">
-                            <span class="d-block small opacity-75">{{ event.start_time|date:"M"|upper }}</span>
-                            <span class="fs-4">{{ event.start_time|date:"d" }}</span>
-                        </div>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small px-3">{{ event.society.name }}</span>
-                        </div>
-                        <h5 class="card-title fw-bold text-dark mb-3">{{ event.title }}</h5>
-                        <p class="text-muted small mb-4">
-                            <i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ event.location }}
-                        </p>
-                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                            <div class="small fw-bold">
-                                <i class="bi bi-people-fill text-secondary me-1"></i>
-                                <span class="{% if event.tickets.count >= event.capacity %}text-danger{% else %}text-success{% endif %}">
-                                    {{ event.tickets.count }}
-                                </span> / {{ event.capacity }}
-                            </div>
-                            <a href="{% url 'event_detail' event.id %}" class="btn btn-view rounded-pill px-4 btn-sm">Join Now</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% empty %}
-            <div class="col-12 text-center py-5">
-                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                    <i class="bi bi-emoji-frown fs-2 text-muted"></i>
-                </div>
-                <h4 class="fw-bold text-muted">No matches found</h4>
-                <p class="text-muted">Try using different keywords or check back later.</p>
-            </div>
-            {% endfor %}
-        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold text-dark mb-2">Discover Your Campus Life</h1>
+        <p class="text-secondary lead">Find interesting events and connect with societies.</p>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <div class="search-container">
+        <form method="GET" action="{% url 'home' %}">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control search-bar" placeholder="Try 'AI', 'Music' or 'Building A'..." value="{{ query|default:'' }}">
+                <button class="btn btn-primary search-btn" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-end mb-4 px-2">
+        <div>
+            <h2 class="section-title fw-bold h3 mb-0">{% if query %}Search Results{% else %}Upcoming Events{% endif %}</h2>
+            {% if query %}<p class="text-muted small mt-2">Showing events matching "{{ query }}"</p>{% endif %}
+        </div>
+        {% if query %}
+            <a href="{% url 'home' %}" class="btn btn-sm btn-outline-secondary rounded-pill">Reset All</a>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        {% for event in events %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card event-card h-100">
+                <div class="position-relative">
+                    {% if event.image %}
+                        <img src="{{ event.image.url }}" class="event-img" alt="event">
+                    {% else %}
+                        <div class="event-img d-flex align-items-center justify-content-center bg-light text-muted"><i class="bi bi-image fs-1 opacity-25"></i></div>
+                    {% endif %}
+                    <div class="date-badge">
+                        <span class="d-block small opacity-75">{{ event.start_time|date:"M"|upper }}</span>
+                        <span class="fs-4">{{ event.start_time|date:"d" }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill small px-3">{{ event.society.name }}</span>
+                    </div>
+                    <h5 class="card-title fw-bold text-dark mb-3">{{ event.title }}</h5>
+                    <p class="text-muted small mb-4"><i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ event.location }}</p>
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <div class="small fw-bold">
+                            <i class="bi bi-people-fill text-secondary me-1"></i>
+                            <span class="{% if event.tickets.count >= event.capacity %}text-danger{% else %}text-success{% endif %}">
+                                {{ event.tickets.count }}
+                            </span> / {{ event.capacity }}
+                        </div>
+                        <a href="{% url 'event_detail' event.id %}" class="btn btn-view rounded-pill px-4 btn-sm">Join Now</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                <i class="bi bi-emoji-frown fs-2 text-muted"></i>
+            </div>
+            <h4 class="fw-bold text-muted">No matches found</h4>
+            <p class="text-muted">Try using different keywords or check back later.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

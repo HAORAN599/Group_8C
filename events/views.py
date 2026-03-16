@@ -3,6 +3,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .models import User, Event, Society, Ticket, Review
+from .forms import EventForm
 
 def login_view(request):
     selected_role = request.GET.get('role', 'student')
@@ -10,14 +11,31 @@ def login_view(request):
         account = request.POST.get('account')
         password = request.POST.get('password')
         user = User.objects.filter(Q(email=account) | Q(phone_number=account)).first()
+
         if user and user.check_password(password):
+
+
+            if selected_role == 'society_admin' and user.role != User.SOCIETY_ADMIN and not user.is_superuser:
+                return render(request, 'events/login.html', {
+                    'error': 'This account does not have admin privileges.',
+                    'current_role': selected_role
+                })
+
+
             login(request, user)
-            return redirect('home') if user.role == User.STUDENT else redirect('admin_dashboard')
+
+
+            if selected_role == 'society_admin':
+                return redirect('admin_dashboard')
+            else:
+                return redirect('home')
+
         else:
             return render(request, 'events/login.html', {
-                'error': 'account or password incorrect',
+                'error': 'Account or password incorrect.',
                 'current_role': selected_role
             })
+
     return render(request, 'events/login.html', {'current_role': selected_role})
 
 def register_view(request):
@@ -25,6 +43,7 @@ def register_view(request):
     if request.method == 'POST':
         name = request.POST.get('name')
         email = request.POST.get('email')
+        phone = request.POST.get('phone')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
         context = {'current_role': selected_role}
@@ -37,8 +56,12 @@ def register_view(request):
         if User.objects.filter(email=email).exists():
             context['error'] = 'this email have been registered'
             return render(request, 'events/register.html', context)
+
+        if User.objects.filter(phone_number=phone).exists():
+            context['error'] = 'this phone number has been registered'
+            return render(request, 'events/register.html', context)
         db_role = User.STUDENT if selected_role == 'student' else User.SOCIETY_ADMIN
-        user = User.objects.create_user(username=email, email=email, password=password, role=db_role)
+        user = User.objects.create_user(username=email, email=email, password=password, role=db_role, phone_number=phone)
         user.first_name = name
         user.save()
         login(request, user)
@@ -82,7 +105,7 @@ def my_tickets(request):
 
 @login_required
 def admin_dashboard(request):
-    if request.user.role != User.SOCIETY_ADMIN:
+    if request.user.role != User.SOCIETY_ADMIN and not request.user.is_superuser:
         return redirect('home')
     society, created = Society.objects.get_or_create(
         admin=request.user, 
@@ -105,3 +128,41 @@ def cancel_ticket(request, ticket_id):
         return redirect('my_tickets')
 
     return redirect('my_tickets')
+
+
+@login_required
+def create_event(request):
+
+    if request.user.role != User.SOCIETY_ADMIN and not request.user.is_superuser:
+        return redirect('home')
+
+
+    society, created = Society.objects.get_or_create(
+        admin=request.user,
+        defaults={'name': f"{request.user.first_name}'s Society"}
+    )
+
+    if request.method == 'POST':
+        form = EventForm(request.POST, request.FILES)
+        if form.is_valid():
+            event = form.save(commit=False)
+            event.society = society
+            event.save()
+            return redirect('admin_dashboard')
+    else:
+        form = EventForm()
+
+    return render(request, 'events/create_event.html', {'form': form})
+
+@login_required
+def delete_event(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+
+
+    if request.user != event.society.admin and not request.user.is_superuser:
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        event.delete()
+
+    return redirect('admin_dashboard')

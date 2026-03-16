@@ -15,6 +15,8 @@ urlpatterns = [
     path('my-tickets/', views.my_tickets, name='my_tickets'),
     path('ticket/<int:ticket_id>/cancel/', views.cancel_ticket, name='cancel_ticket'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('create-event/', views.create_event, name='create_event'),
+    path('event/<int:event_id>/delete/', views.delete_event, name='delete_event'),
 ]
 
 if settings.DEBUG:

@@ -1,61 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Event Hub</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f8f9fa; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px 0; }
-        .auth-card {
-            width: 100%;
-            max-width: 450px;
-            padding: 2.5rem;
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-        .btn-success { background: #28a745; border: none; padding: 12px; border-radius: 10px; }
-        .form-label { font-size: 0.85rem; font-weight: 600; color: #555; }
-    </style>
-</head>
-<body>
-    <div class="auth-card">
-        <div class="text-center mb-4">
-            <h2 class="fw-bold">Join Us</h2>
-            <p class="text-muted small">Register as a {% if current_role == 'student' %}Student{% else %}Club Admin{% endif %}</p>
-        </div>
+{% extends 'events/base.html' %}
 
-        {% if error %}
-            <div class="alert alert-danger py-2 small">{{ error }}</div>
-        {% endif %}
+{% block title %}Register - Event Hub{% endblock %}
+{% block body_class %}body-auth{% endblock %}
 
-        <form method="POST" action="{% url 'register' %}?role={{ current_role }}">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label class="form-label">Full Name</label>
-                <input type="text" name="name" value="{{ request.POST.name }}" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Email Address</label>
-                <input type="email" name="email" value="{{ request.POST.email }}" class="form-control" required>
-            </div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Password</label>
-                    <input type="password" name="password" class="form-control" minlength="8" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Confirm</label>
-                    <input type="password" name="confirm_password" class="form-control" minlength="8" required>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-success w-100 fw-bold mt-2">Create Account</button>
-        </form>
-
-        <div class="text-center mt-4">
-            <p class="small text-muted mb-0">Already have an account? <a href="{% url 'login' %}?role={{ current_role }}" class="text-decoration-none fw-bold">Log in</a></p>
-        </div>
+{% block content %}
+<div class="auth-card">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Join Us</h2>
+        <p class="text-muted small">Register as a {% if current_role == 'student' %}Student{% else %}Club Admin{% endif %}</p>
     </div>
-</body>
-</html>
+
+    {% if error %}
+        <div class="alert alert-danger py-2 small">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{% url 'register' %}?role={{ current_role }}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #555;">Full Name</label>
+            <input type="text" name="name" value="{{ request.POST.name }}" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #555;">Email Address</label>
+            <input type="email" name="email" value="{{ request.POST.email }}" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #555;">Phone Number</label>
+            <input type="tel" name="phone" value="{{ request.POST.phone }}" class="form-control" required>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #555;">Password</label>
+                <input type="password" name="password" class="form-control" minlength="8" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label" style="font-size: 0.85rem; font-weight: 600; color: #555;">Confirm</label>
+                <input type="password" name="confirm_password" class="form-control" minlength="8" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success w-100 fw-bold mt-2" style="background: #28a745; border: none; padding: 12px; border-radius: 10px;">Create Account</button>
+    </form>
+
+    <div class="text-center mt-4">
+        <p class="small text-muted mb-0">Already have an account? <a href="{% url 'login' %}?role={{ current_role }}" class="text-decoration-none fw-bold">Log in</a></p>
+    </div>
+</div>
+{% endblock %}

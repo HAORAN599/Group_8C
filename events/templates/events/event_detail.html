@@ -1,142 +1,122 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ event.title }} - Details</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'events/css/modal.css' %}">
+{% extends 'events/base.html' %}
 
-</head>
-<body>
-    <nav class="navbar navbar-dark bg-transparent position-absolute w-100 mt-3">
-        <div class="container">
-            <a href="{% url 'home' %}" class="btn btn-blur rounded-pill text-white px-3" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);">
-                <i class="bi bi-chevron-left me-2"></i>Explore
-            </a>
-        </div>
-    </nav>
+{% block title %}{{ event.title }} - Details{% endblock %}
+{% block body_class %}body-home{% endblock %}
 
-    <div class="hero-banner text-center">
-        <div class="container">
-            <span class="badge bg-white text-primary rounded-pill px-4 py-2 mb-3 shadow-sm fw-bold">{{ event.society.name }}</span>
-            <h1 class="display-3 fw-bold mb-5 pb-4 text-shadow">{{ event.title }}</h1>
-        </div>
+{% block navbar %}
+<nav class="navbar navbar-dark bg-transparent position-absolute w-100 mt-3">
+    <div class="container">
+        <a href="{% url 'home' %}" class="btn btn-blur rounded-pill text-white px-3" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);">
+            <i class="bi bi-chevron-left me-2"></i>Explore
+        </a>
     </div>
+</nav>
+{% endblock %}
 
-    <div class="container mb-5" style="margin-top: -80px;">
-        <div class="row g-4">
-            <div class="col-lg-8">
-                <div class="card glass-card shadow-lg p-4 p-md-5 mb-4">
-                    <h3 class="fw-bold mb-4">Event Details</h3>
-                    <p class="text-secondary lh-lg fs-5 mb-5">{{ event.description }}</p>
-                    
-                    <div class="row g-4">
-                        <div class="col-sm-6">
-                            <div class="info-pill d-flex align-items-center">
-                                <i class="bi bi-calendar-event fs-4 me-3"></i>
-                                <span>{{ event.start_time|date:"l, M d, Y" }}</span>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="info-pill d-flex align-items-center">
-                                <i class="bi bi-clock fs-4 me-3"></i>
-                                <span>{{ event.start_time|date:"H:i" }}</span>
-                            </div>
+{% block content %}
+<div class="hero-banner text-center">
+    <div class="container">
+        <span class="badge bg-white text-primary rounded-pill px-4 py-2 mb-3 shadow-sm fw-bold">{{ event.society.name }}</span>
+        <h1 class="display-3 fw-bold mb-5 pb-4 text-shadow text-dark">{{ event.title }}</h1>
+    </div>
+</div>
+
+<div class="container mb-5" style="margin-top: -80px;">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card glass-card shadow-lg p-4 p-md-5 mb-4" style="background: white; border-radius: 20px;">
+                <h3 class="fw-bold mb-4">Event Details</h3>
+                <p class="text-secondary lh-lg fs-5 mb-5">{{ event.description }}</p>
+
+                <div class="row g-4">
+                    <div class="col-sm-6">
+                        <div class="info-pill d-flex align-items-center">
+                            <i class="bi bi-calendar-event fs-4 me-3"></i>
+                            <span>{{ event.start_time|date:"l, M d, Y" }}</span>
                         </div>
                     </div>
-                </div>
-
-                <div class="card glass-card shadow-sm p-4">
-                    <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Venue Information</h5>
-                    <p class="text-muted">{{ event.location }}</p>
-                    <div class="rounded-4 overflow-hidden shadow-sm" style="height: 250px;">
-                        <iframe width="100%" height="100%" frameborder="0" style="border:0" 
-                            src="https://maps.google.com/maps?q={{ event.location|urlencode }}&t=&z=15&ie=UTF8&iwloc=&output=embed">
-                        </iframe>
+                    <div class="col-sm-6">
+                        <div class="info-pill d-flex align-items-center">
+                            <i class="bi bi-clock fs-4 me-3"></i>
+                            <span>{{ event.start_time|date:"H:i" }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-4">
-                <div class="booking-sidebar">
-                    <div class="card border-0 shadow-lg p-4 rounded-5">
-                        <h4 class="fw-bold mb-4">Reservation</h4>
-                        
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Availability Status</span>
-                                <span class="fw-bold small">{{ event.tickets.count }} / {{ event.capacity }} booked</span>
-                            </div>
-                            <div class="progress">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                     style="--progress-width: {% widthratio event.tickets.count event.capacity 100 %}%"></div>
-                            </div>
-                            {% if event.tickets.count >= event.capacity %}
-                                <p class="text-danger small mt-2 fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Event is fully booked!</p>
-                            {% endif %}
+            <div class="card glass-card shadow-sm p-4" style="background: white; border-radius: 20px;">
+                <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Venue Information</h5>
+                <p class="text-muted">{{ event.location }}</p>
+                <div class="rounded-4 overflow-hidden shadow-sm" style="height: 250px;">
+                    <iframe width="100%" height="100%" frameborder="0" style="border:0"
+                        src="https://maps.google.com/maps?q={{ event.location|urlencode }}&t=&z=15&ie=UTF8&iwloc=&output=embed">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="booking-sidebar">
+                <div class="card border-0 shadow-lg p-4 rounded-5">
+                    <h4 class="fw-bold mb-4">Reservation</h4>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">Availability Status</span>
+                            <span class="fw-bold small">{{ event.tickets.count }} / {{ event.capacity }} booked</span>
                         </div>
-
-                        {% if already_has_ticket %}
-                            <div class="bg-success-subtle text-success p-3 rounded-4 mb-3 text-center border border-success-subtle">
-                                <i class="bi bi-check-circle-fill me-2"></i><strong>You are registered!</strong>
-                            </div>
-                            <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 rounded-pill py-3 fw-bold">View My Ticket</a>
-                        {% else %}
-
-                            <form method="POST" id="bookingForm" onsubmit="return validateBooking();">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-primary btn-booking w-100 rounded-pill py-3 text-white"
-                                    {% if event.tickets.count >= event.capacity %}disabled{% endif %}>
-                                    {% if event.tickets.count >= event.capacity %}Sold Out{% else %}Get My Free Ticket{% endif %}
-                                </button>
-                            </form>
-
-                            <script>
-                                let isConfirmed = false;
-
-
-                                function validateBooking() {
-                                    if (!isConfirmed) {
-
-                                        openCustomModal("Are you sure you want to book a ticket for this event?", 'bookingForm');
-
-                                        return false;
-                                    }
-
-                                    return true;
-                                }
-
-
-                                document.addEventListener('customModalConfirmed', function(e) {
-
-                                    if (e.detail === 'bookingForm') {
-                                        isConfirmed = true;
-                                        document.getElementById('bookingForm').submit();
-                                    }
-                               });
-                            </script>
-
-
-
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 style="--progress-width: {% widthratio event.tickets.count event.capacity 100 %}%"></div>
+                        </div>
+                        {% if event.tickets.count >= event.capacity %}
+                            <p class="text-danger small mt-2 fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Event is fully booked!</p>
                         {% endif %}
-                        
-                        <div class="mt-4 pt-3 border-top">
-                            <ul class="list-unstyled small text-muted">
-                                <li class="mb-2"><i class="bi bi-shield-check text-success me-2"></i>Instant confirmation</li>
-                                <li><i class="bi bi-phone text-success me-2"></i>Mobile ticket accepted</li>
-                            </ul>
+                    </div>
+
+                    {% if already_has_ticket %}
+                        <div class="bg-success-subtle text-success p-3 rounded-4 mb-3 text-center border border-success-subtle">
+                            <i class="bi bi-check-circle-fill me-2"></i><strong>You are registered!</strong>
                         </div>
+                        <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 rounded-pill py-3 fw-bold">View My Ticket</a>
+                    {% else %}
+                        <form method="POST" id="bookingForm" onsubmit="return validateBooking();">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-booking w-100 rounded-pill py-3 text-white"
+                                {% if event.tickets.count >= event.capacity %}disabled{% endif %}>
+                                {% if event.tickets.count >= event.capacity %}Sold Out{% else %}Get My Free Ticket{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <div class="mt-4 pt-3 border-top">
+                        <ul class="list-unstyled small text-muted">
+                            <li class="mb-2"><i class="bi bi-shield-check text-success me-2"></i>Instant confirmation</li>
+                            <li><i class="bi bi-phone text-success me-2"></i>Mobile ticket accepted</li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
 
-{% include 'events/confirm_modal.html' %}
-
-<script src="{% static 'events/js/modal.js' %}"></script>
-</body>
-</html>
+{% block extra_js %}
+<script>
+    let isConfirmed = false;
+    function validateBooking() {
+        if (!isConfirmed) {
+            openCustomModal("Are you sure you want to book a ticket for this event?", 'bookingForm');
+            return false;
+        }
+        return true;
+    }
+    document.addEventListener('customModalConfirmed', function(e) {
+        if (e.detail === 'bookingForm') {
+            isConfirmed = true;
+            document.getElementById('bookingForm').submit();
+        }
+   });
+</script>
+{% endblock %}

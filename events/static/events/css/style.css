@@ -1,0 +1,72 @@
+/* events/static/events/css/style.css */
+
+/* --- 全局变量 --- */
+:root {
+    --primary-color: #4361ee;
+    --accent-color: #4cc9f0;
+    --text-dark: #2b2d42;
+}
+
+/* --- 各页面的背景样式 --- */
+.body-landing {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.body-auth {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.body-home {
+    background-color: #fcfcfd;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+.body-admin {
+    background-color: #f4f7f6;
+}
+
+/* --- Landing Page 样式 --- */
+.hero-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 3rem; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); max-width: 600px; }
+.hero-card h1 { font-weight: 800; letter-spacing: -1px; margin-bottom: 1.5rem; }
+.btn-custom { padding: 12px 35px; border-radius: 50px; font-weight: 600; transition: all 0.3s; }
+.btn-student { background-color: #fff; color: #667eea; }
+.btn-student:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(255,255,255,0.3); }
+.btn-admin { background-color: transparent; color: #fff; border: 2px solid #fff; }
+.btn-admin:hover { background-color: #fff; color: #764ba2; }
+
+/* --- Auth Pages (Login/Register) 样式 --- */
+.auth-card { width: 100%; max-width: 450px; padding: 2.5rem; background: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+.role-badge { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem; background: #e9ecef; color: #495057; }
+
+/* --- Home Page 样式 --- */
+.navbar-custom { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+.navbar-brand-custom { font-size: 1.5rem; letter-spacing: -1px; background: linear-gradient(45deg, var(--primary-color), var(--accent-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.search-container { max-width: 700px; margin: 0 auto 4rem; }
+.search-bar { border-radius: 20px 0 0 20px !important; padding: 15px 30px; border: 2px solid #eee; box-shadow: 0 10px 25px rgba(0,0,0,0.03); transition: all 0.3s; }
+.search-bar:focus { border-color: var(--primary-color); box-shadow: 0 10px 25px rgba(67, 97, 238, 0.1); }
+.search-btn { border-radius: 0 20px 20px 0 !important; background: var(--primary-color); border: none; padding: 0 30px; }
+.event-card { border: none; border-radius: 20px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; background: white; border: 1px solid rgba(0,0,0,0.03); }
+.event-card:hover { transform: translateY(-12px); box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
+.event-img { height: 200px; object-fit: cover; width: 100%; transition: transform 0.5s; }
+.event-card:hover .event-img { transform: scale(1.05); }
+.date-badge { position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(5px); padding: 8px 15px; border-radius: 12px; font-weight: 800; color: var(--primary-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.section-title { position: relative; padding-left: 20px; }
+.section-title::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 6px; height: 30px; background: var(--primary-color); border-radius: 10px; }
+.btn-view { background: #f0f3ff; color: var(--primary-color); font-weight: 600; border: none; }
+.btn-view:hover { background: var(--primary-color); color: white; }
+
+/* --- Admin Dashboard 样式 --- */
+.stat-card { border: none; border-radius: 15px; transition: transform 0.3s; }
+.stat-card:hover { transform: translateY(-5px); }
+.table-card { border: none; border-radius: 15px; overflow: hidden; }
+.sidebar { background: white; border-radius: 15px; height: fit-content; }
