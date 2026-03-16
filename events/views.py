@@ -94,3 +94,14 @@ def admin_dashboard(request):
 def logout_view(request):
     logout(request)
     return redirect('landing')
+
+
+def cancel_ticket(request, ticket_id):
+    #  get_object_or_404 and limit user=request.user，make sure can only delete own ticket
+    ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user)
+
+    if request.method == 'POST':
+        ticket.delete()
+        return redirect('my_tickets')
+
+    return redirect('my_tickets')
