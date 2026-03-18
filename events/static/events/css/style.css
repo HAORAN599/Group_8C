@@ -1,13 +1,13 @@
 /* events/static/events/css/style.css */
 
-/* --- 全局变量 --- */
+/* --- Global Variables --- */
 :root {
     --primary-color: #4361ee;
     --accent-color: #4cc9f0;
     --text-dark: #2b2d42;
 }
 
-/* --- 各页面的背景样式 --- */
+/* --- Page Background Styles --- */
 .body-landing {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     height: 100vh;
@@ -35,7 +35,7 @@
     background-color: #f4f7f6;
 }
 
-/* --- Landing Page 样式 --- */
+/* --- Landing Page Styles --- */
 .hero-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 3rem; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); max-width: 600px; }
 .hero-card h1 { font-weight: 800; letter-spacing: -1px; margin-bottom: 1.5rem; }
 .btn-custom { padding: 12px 35px; border-radius: 50px; font-weight: 600; transition: all 0.3s; }
@@ -44,11 +44,11 @@
 .btn-admin { background-color: transparent; color: #fff; border: 2px solid #fff; }
 .btn-admin:hover { background-color: #fff; color: #764ba2; }
 
-/* --- Auth Pages (Login/Register) 样式 --- */
+/* --- Auth Pages (Login/Register) Styles --- */
 .auth-card { width: 100%; max-width: 450px; padding: 2.5rem; background: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
 .role-badge { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem; background: #e9ecef; color: #495057; }
 
-/* --- Home Page 样式 --- */
+/* --- Home Page Styles --- */
 .navbar-custom { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); }
 .navbar-brand-custom { font-size: 1.5rem; letter-spacing: -1px; background: linear-gradient(45deg, var(--primary-color), var(--accent-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .search-container { max-width: 700px; margin: 0 auto 4rem; }
@@ -65,7 +65,7 @@
 .btn-view { background: #f0f3ff; color: var(--primary-color); font-weight: 600; border: none; }
 .btn-view:hover { background: var(--primary-color); color: white; }
 
-/* --- Admin Dashboard 样式 --- */
+/* --- Admin Dashboard Styles --- */
 .stat-card { border: none; border-radius: 15px; transition: transform 0.3s; }
 .stat-card:hover { transform: translateY(-5px); }
 .table-card { border: none; border-radius: 15px; overflow: hidden; }

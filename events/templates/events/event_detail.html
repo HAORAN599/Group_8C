@@ -1,20 +1,20 @@
 {% extends 'events/base.html' %}
 
-{% block title %}{{ event.title }} - Details{% endblock %}
+{% block title %}{{ event.title }} - Event Details{% endblock %}
 {% block body_class %}body-home{% endblock %}
 
 {% block navbar %}
 <nav class="navbar navbar-dark bg-transparent position-absolute w-100 mt-3">
     <div class="container">
         <a href="{% url 'home' %}" class="btn btn-blur rounded-pill text-white px-3" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);">
-            <i class="bi bi-chevron-left me-2"></i>Explore
+            <i class="bi bi-chevron-left me-2"></i>Back to Explore
         </a>
     </div>
 </nav>
 {% endblock %}
 
 {% block content %}
-<div class="hero-banner text-center">
+<div class="hero-banner text-center py-5">
     <div class="container">
         <span class="badge bg-white text-primary rounded-pill px-4 py-2 mb-3 shadow-sm fw-bold">{{ event.society.name }}</span>
         <h1 class="display-3 fw-bold mb-5 pb-4 text-shadow text-dark">{{ event.title }}</h1>
@@ -24,28 +24,28 @@
 <div class="container mb-5" style="margin-top: -80px;">
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card glass-card shadow-lg p-4 p-md-5 mb-4" style="background: white; border-radius: 20px;">
-                <h3 class="fw-bold mb-4">Event Details</h3>
+            <div class="card shadow-lg p-4 p-md-5 mb-4 border-0 rounded-4" style="background: white;">
+                <h3 class="fw-bold mb-4">Event Description</h3>
                 <p class="text-secondary lh-lg fs-5 mb-5">{{ event.description }}</p>
 
                 <div class="row g-4">
                     <div class="col-sm-6">
-                        <div class="info-pill d-flex align-items-center">
-                            <i class="bi bi-calendar-event fs-4 me-3"></i>
+                        <div class="info-pill d-flex align-items-center p-3 bg-light rounded-4">
+                            <i class="bi bi-calendar-event fs-4 me-3 text-primary"></i>
                             <span>{{ event.start_time|date:"l, M d, Y" }}</span>
                         </div>
                     </div>
                     <div class="col-sm-6">
-                        <div class="info-pill d-flex align-items-center">
-                            <i class="bi bi-clock fs-4 me-3"></i>
-                            <span>{{ event.start_time|date:"H:i" }}</span>
+                        <div class="info-pill d-flex align-items-center p-3 bg-light rounded-4">
+                            <i class="bi bi-clock fs-4 me-3 text-primary"></i>
+                            <span>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card glass-card shadow-sm p-4" style="background: white; border-radius: 20px;">
-                <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Venue Information</h5>
+            <div class="card shadow-sm p-4 border-0 rounded-4" style="background: white;">
+                <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Venue Location</h5>
                 <p class="text-muted">{{ event.location }}</p>
                 <div class="rounded-4 overflow-hidden shadow-sm" style="height: 250px;">
                     <iframe width="100%" height="100%" frameborder="0" style="border:0"
@@ -56,43 +56,45 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="booking-sidebar">
-                <div class="card border-0 shadow-lg p-4 rounded-5">
-                    <h4 class="fw-bold mb-4">Reservation</h4>
+            <div class="booking-sidebar sticky-top" style="top: 100px;">
+                <div class="card border-0 shadow-lg p-4 rounded-4">
+                    <h4 class="fw-bold mb-4">Quick Reservation</h4>
 
                     <div class="mb-4">
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted small">Availability Status</span>
-                            <span class="fw-bold small">{{ event.tickets.count }} / {{ event.capacity }} booked</span>
+                            <span class="text-muted small">Current Occupancy</span>
+                            <span class="fw-bold small"><span id="booked-count">{{ event.tickets.count }}</span> / {{ event.capacity }} booked</span>
                         </div>
-                        <div class="progress">
+                        <div class="progress" style="height: 10px; background-color: #e9ecef;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                 style="--progress-width: {% widthratio event.tickets.count event.capacity 100 %}%"></div>
+                                 id="booking-progress-bar"
+                                 style="--booking-pct: {% widthratio event.tickets.count event.capacity 100 %}%; width: var(--booking-pct);"></div>
                         </div>
-                        {% if event.tickets.count >= event.capacity %}
-                            <p class="text-danger small mt-2 fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Event is fully booked!</p>
+                    </div>
+
+                    <div id="booking-action-area">
+                        {% if already_has_ticket %}
+                            <div class="alert alert-success border-0 rounded-4 text-center py-3">
+                                <i class="bi bi-check-circle-fill me-2"></i><strong>Registered Successfully!</strong>
+                            </div>
+                            <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 rounded-pill py-3 fw-bold shadow-sm">
+                                <i class="bi bi-ticket-perforated me-2"></i>View My Tickets
+                            </a>
+                        {% else %}
+                            <form method="POST" id="ajaxBookingForm">
+                                {% csrf_token %}
+                                <button type="submit" id="btn-submit" class="btn btn-primary w-100 rounded-pill py-3 text-white fw-bold shadow"
+                                    {% if event.tickets.count >= event.capacity %}disabled{% endif %}>
+                                    {% if event.tickets.count >= event.capacity %}Event Full{% else %}Book Ticket Now{% endif %}
+                                </button>
+                            </form>
                         {% endif %}
                     </div>
 
-                    {% if already_has_ticket %}
-                        <div class="bg-success-subtle text-success p-3 rounded-4 mb-3 text-center border border-success-subtle">
-                            <i class="bi bi-check-circle-fill me-2"></i><strong>You are registered!</strong>
-                        </div>
-                        <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 rounded-pill py-3 fw-bold">View My Ticket</a>
-                    {% else %}
-                        <form method="POST" id="bookingForm" onsubmit="return validateBooking();">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary btn-booking w-100 rounded-pill py-3 text-white"
-                                {% if event.tickets.count >= event.capacity %}disabled{% endif %}>
-                                {% if event.tickets.count >= event.capacity %}Sold Out{% else %}Get My Free Ticket{% endif %}
-                            </button>
-                        </form>
-                    {% endif %}
-
                     <div class="mt-4 pt-3 border-top">
                         <ul class="list-unstyled small text-muted">
-                            <li class="mb-2"><i class="bi bi-shield-check text-success me-2"></i>Instant confirmation</li>
-                            <li><i class="bi bi-phone text-success me-2"></i>Mobile ticket accepted</li>
+                            <li class="mb-2"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Instant Digital Delivery</li>
+                            <li><i class="bi bi-qr-code-scan text-success me-2"></i>Scan to check-in at event</li>
                         </ul>
                     </div>
                 </div>
@@ -103,20 +105,58 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    let isConfirmed = false;
-    function validateBooking() {
-        if (!isConfirmed) {
-            openCustomModal("Are you sure you want to book a ticket for this event?", 'bookingForm');
-            return false;
-        }
-        return true;
-    }
+$(document).ready(function() {
+    // Intercept form submission to use AJAX instead
+    $('#ajaxBookingForm').on('submit', function(e) {
+        e.preventDefault(); 
+        // Trigger the confirmation modal before proceeding
+        openCustomModal("Would you like to confirm your registration for this event?", 'ajaxBookingForm');
+    });
+
+    // Listen for custom modal confirmation event
     document.addEventListener('customModalConfirmed', function(e) {
-        if (e.detail === 'bookingForm') {
-            isConfirmed = true;
-            document.getElementById('bookingForm').submit();
+        if (e.detail === 'ajaxBookingForm') {
+            executeAjaxBooking();
         }
-   });
+    });
+
+    function executeAjaxBooking() {
+        const btn = $('#btn-submit');
+        // Visual feedback during processing
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Confirming...');
+
+        $.ajax({
+            type: 'POST',
+            url: window.location.href,
+            data: $('#ajaxBookingForm').serialize(),
+            headers: {'X-Requested-With': 'XMLHttpRequest'}, // Identifying AJAX request for Django
+            success: function(response) {
+                // Update stats and progress bar dynamically
+                $('#booked-count').text(response.current_count);
+                const newPct = (response.current_count / response.capacity) * 100;
+                $('#booking-progress-bar').css('width', newPct + '%');
+
+                // Update the UI area with a success state without page reload
+                $('#booking-action-area').fadeOut(300, function() {
+                    $(this).html(`
+                        <div class="alert alert-success border-0 rounded-4 text-center py-3 animate__animated animate__fadeIn">
+                            <i class="bi bi-check-circle-fill me-2"></i><strong>Booking Confirmed!</strong>
+                        </div>
+                        <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 rounded-pill py-3 fw-bold shadow-sm">
+                            <i class="bi bi-ticket-perforated me-2"></i>View My Tickets
+                        </a>
+                    `).fadeIn(300);
+                });
+            },
+            error: function(xhr) {
+                // Error handling: Alert user and revert button state
+                alert(xhr.responseJSON ? xhr.responseJSON.message : "An error occurred during booking.");
+                btn.prop('disabled', false).text('Book Ticket Now');
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
