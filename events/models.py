@@ -2,7 +2,12 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 
+# --- Custom User Model ---
 class User(AbstractUser):
+    """
+    Extending the default Django User model to distinguish between 
+    students and society administrators.
+    """
     STUDENT = 'student'
     SOCIETY_ADMIN = 'society_admin'
     ROLE_CHOICES = [
@@ -10,6 +15,7 @@ class User(AbstractUser):
         (SOCIETY_ADMIN, 'Society Admin'),
     ]
 
+    # Additional fields to support specific project requirements
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=STUDENT)
     profile_picture = models.CharField(max_length=255, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True, unique=True)
@@ -17,23 +23,37 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
 
+# --- Society Model ---
 class Society(models.Model):
+    """
+    Represents a University Society. Each society is managed by exactly 
+    one User (Society Admin).
+    """
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField()
     logo = models.ImageField(upload_to='society_logos/', blank=True, null=True)
+    
+    # One-to-One relationship ensures a unique manager for each society
     admin = models.OneToOneField(User, on_delete=models.CASCADE, related_name='managed_society')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
 
+# --- Event Model ---
 class Event(models.Model):
+    """
+    Core model for campus events, including logistical details like location and capacity.
+    """
     society = models.ForeignKey(Society, on_delete=models.CASCADE, related_name='events')
     title = models.CharField(max_length=200)
     description = models.TextField()
     location = models.CharField(max_length=255)
+    
+    # Fields for potential Map API integration
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+    
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     capacity = models.PositiveIntegerField()
@@ -43,7 +63,11 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+# --- Ticket Model ---
 class Ticket(models.Model):
+    """
+    Handles event bookings. Each ticket generates a unique code automatically upon creation.
+    """
     STATUS_CHOICES = [
         ('valid', 'Valid'),
         ('used', 'Used'),
@@ -57,6 +81,10 @@ class Ticket(models.Model):
     purchased_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
+        """
+        Overriding the save method to generate a short, unique ticket identifier 
+        using UUID if one does not already exist.
+        """
         if not self.ticket_code:
             self.ticket_code = str(uuid.uuid4()).split('-')[0].upper()
         super().save(*args, **kwargs)
@@ -64,7 +92,12 @@ class Ticket(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.event.title}"
 
+# --- Review Model ---
 class Review(models.Model):
+    """
+    Allows students to rate and review events. 
+    A unique_together constraint ensures a user can only review an event once.
+    """
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
@@ -72,5 +105,6 @@ class Review(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        # Prevents multiple reviews from the same user on the same event
         unique_together = ('event', 'user')
 
