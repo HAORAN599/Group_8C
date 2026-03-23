@@ -216,7 +216,7 @@ def admin_dashboard(request):
     # Ensure every admin has an associated Society object
     society, created = Society.objects.get_or_create(
         admin=request.user, 
-        defaults={'name': f"{request.user.first_name}'s Society"}
+        defaults={'name': f"Society of {request.user.first_name} (ID:{request.user.id})"}
     )
     events = society.events.all()
     return render(request, 'events/admin_dashboard.html', {'society': society, 'events': events})
@@ -229,7 +229,7 @@ def create_event(request):
 
     society, created = Society.objects.get_or_create(
         admin=request.user,
-        defaults={'name': f"{request.user.first_name}'s Society"}
+        defaults={'name': f"Society of {request.user.first_name} (ID:{request.user.id})"}
     )
 
     if request.method == 'POST':
