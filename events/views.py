@@ -46,11 +46,8 @@ def login_view(request):
 
     return render(request, 'events/login.html', {'current_role': selected_role})
 
+
 def register_view(request):
-    """
-    Handles user registration with validation for password length, 
-    password matching, and uniqueness of email/phone.
-    """
     selected_role = request.GET.get('role', 'student')
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -60,29 +57,44 @@ def register_view(request):
         confirm_password = request.POST.get('confirm_password')
         context = {'current_role': selected_role}
 
-        # Basic form validation logic
+
         if len(password) < 8:
             context['error'] = 'Password must be at least 8 characters long.'
             return render(request, 'events/register.html', context)
         if password != confirm_password:
             context['error'] = 'Passwords do not match.'
             return render(request, 'events/register.html', context)
-        if User.objects.filter(email=email).exists():
-            context['error'] = 'This email is already registered.'
-            return render(request, 'events/register.html', context)
-        if User.objects.filter(phone_number=phone).exists():
-            context['error'] = 'This phone number is already registered.'
-            return render(request, 'events/register.html', context)
 
-        # Create user with specified role
+
+        existing_user = User.objects.filter(Q(email=email) | Q(phone_number=phone)).first()
+
+        if existing_user:
+            # if user in,and have student account
+            if selected_role == 'society_admin' and existing_user.role == User.STUDENT:
+
+                if existing_user.check_password(password):
+                    existing_user.role = User.SOCIETY_ADMIN
+                    existing_user.save()
+                    login(request, existing_user)
+                    return redirect('admin_dashboard')
+                else:
+                    context[
+                        'error'] = 'This email is already registered as a student. Please enter the correct password to upgrade to Admin.'
+                    return render(request, 'events/register.html', context)
+            else:
+                context['error'] = 'This email or phone number is already registered.'
+                return render(request, 'events/register.html', context)
+
+        #for new user
         db_role = User.STUDENT if selected_role == 'student' else User.SOCIETY_ADMIN
-        user = User.objects.create_user(username=email, email=email, password=password, role=db_role, phone_number=phone)
+        user = User.objects.create_user(username=email, email=email, password=password, role=db_role,
+                                        phone_number=phone)
         user.first_name = name
         user.save()
-        
+
         login(request, user)
         return redirect('home') if db_role == User.STUDENT else redirect('admin_dashboard')
-    
+
     return render(request, 'events/register.html', {'current_role': selected_role})
 
 def landing_page(request):
