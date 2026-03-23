@@ -51,49 +51,60 @@ def register_view(request):
     selected_role = request.GET.get('role', 'student')
     if request.method == 'POST':
         name = request.POST.get('name')
-        email = request.POST.get('email')
+        email = request.POST.get('email').strip().lower()
         phone = request.POST.get('phone')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
         context = {'current_role': selected_role}
 
-
-        if len(password) < 8:
-            context['error'] = 'Password must be at least 8 characters long.'
-            return render(request, 'events/register.html', context)
+        # check does the password the same
         if password != confirm_password:
             context['error'] = 'Passwords do not match.'
             return render(request, 'events/register.html', context)
 
-
+        # user whether exit
         existing_user = User.objects.filter(Q(email=email) | Q(phone_number=phone)).first()
 
         if existing_user:
-            # if user in,and have student account
+
             if selected_role == 'society_admin' and existing_user.role == User.STUDENT:
 
                 if existing_user.check_password(password):
                     existing_user.role = User.SOCIETY_ADMIN
+                    existing_user.first_name = name
                     existing_user.save()
+
                     login(request, existing_user)
                     return redirect('admin_dashboard')
                 else:
+
                     context[
                         'error'] = 'This email is already registered as a student. Please enter the correct password to upgrade to Admin.'
                     return render(request, 'events/register.html', context)
+
+
             else:
                 context['error'] = 'This email or phone number is already registered.'
                 return render(request, 'events/register.html', context)
 
-        #for new user
+        # for new
         db_role = User.STUDENT if selected_role == 'student' else User.SOCIETY_ADMIN
-        user = User.objects.create_user(username=email, email=email, password=password, role=db_role,
-                                        phone_number=phone)
-        user.first_name = name
-        user.save()
+        try:
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                role=db_role,
+                phone_number=phone
+            )
+            user.first_name = name
+            user.save()
 
-        login(request, user)
-        return redirect('home') if db_role == User.STUDENT else redirect('admin_dashboard')
+            login(request, user)
+            return redirect('home') if db_role == User.STUDENT else redirect('admin_dashboard')
+        except Exception as e:
+            context['error'] = f'Registration failed: {str(e)}'
+            return render(request, 'events/register.html', context)
 
     return render(request, 'events/register.html', {'current_role': selected_role})
 
