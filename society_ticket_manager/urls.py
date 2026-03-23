@@ -17,6 +17,7 @@ urlpatterns = [
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('create-event/', views.create_event, name='create_event'),
     path('event/<int:event_id>/delete/', views.delete_event, name='delete_event'),
+    path('event/<int:event_id>/edit/', views.edit_event, name='edit_event'),
 ]
 
 if settings.DEBUG:

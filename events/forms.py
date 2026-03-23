@@ -1,5 +1,6 @@
 from django import forms
 from .models import Event
+from datetime import datetime, time
 
 class EventForm(forms.ModelForm):
     """
@@ -12,7 +13,7 @@ class EventForm(forms.ModelForm):
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S']
     )
-    end_time = forms.DateTimeField(
+    end_time = forms.TimeField(
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S']
     )
@@ -30,3 +31,17 @@ class EventForm(forms.ModelForm):
             'capacity': forms.NumberInput(attrs={'class': 'form-control'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_dt = cleaned_data.get('start_time')
+        end_t = cleaned_data.get('end_time')
+
+
+        if start_dt and end_t and isinstance(end_t, time):
+
+            cleaned_data['end_time'] = datetime.combine(
+                start_dt.date(), end_t, tzinfo=start_dt.tzinfo
+            )
+
+        return cleaned_data

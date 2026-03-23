@@ -4,6 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .models import User, Event, Society, Ticket, Review
 from .forms import EventForm
+from datetime import datetime
+from django.core.mail import send_mail
+from django.conf import settings
 
 # --- Authentication Views ---
 
@@ -107,23 +110,55 @@ def home(request):
         events = Event.objects.all().order_by('start_time')
     return render(request, 'events/home.html', {'events': events, 'query': query})
 
+
 @login_required
 def event_detail(request, event_id):
     """
     Displays detailed information for a specific event and handles ticket booking.
-    Includes capacity check to prevent overselling.
+    Includes capacity check to prevent overselling, and sends a confirmation email.
     """
     event = get_object_or_404(Event, id=event_id)
     already_has_ticket = Ticket.objects.filter(user=request.user, event=event).exists()
-    
+
     if request.method == 'POST' and not already_has_ticket:
         # Validate capacity before ticket creation
         if event.tickets.count() < event.capacity:
-            Ticket.objects.create(user=request.user, event=event)
+
+            ticket = Ticket.objects.create(user=request.user, event=event)
+
+
+            subject = f"Booking Confirmation: {event.title}"
+            message = f"""
+            Hi {request.user.first_name},
+
+            You have successfully booked a ticket for '{event.title}'.
+
+            Here are your event details:
+            - Location: {event.location}
+            - Start Time: {event.start_time.strftime('%Y-%m-%d %H:%M')}
+            - Your Ticket Code: {ticket.ticket_code}
+
+            Looking forward to seeing you there!
+            """
+
+
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.EMAIL_HOST_USER,
+                    [request.user.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+
+                print(f"Error sending email: {e}")
+
+
             return redirect('my_tickets')
-            
+
     return render(request, 'events/event_detail.html', {
-        'event': event, 
+        'event': event,
         'already_has_ticket': already_has_ticket
     })
 
@@ -204,3 +239,24 @@ def logout_view(request):
     """Logs out the user and redirects to the landing page."""
     logout(request)
     return redirect('landing')
+
+
+@login_required
+def edit_event(request, event_id):
+
+    event = get_object_or_404(Event, id=event_id)
+
+
+    if request.user != event.society.admin and not request.user.is_superuser:
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        form = EventForm(request.POST, request.FILES, instance=event)
+        if form.is_valid():
+            form.save()
+            return redirect('admin_dashboard')
+    else:
+
+        form = EventForm(instance=event)
+
+    return render(request, 'events/edit_event.html', {'form': form, 'event': event})
