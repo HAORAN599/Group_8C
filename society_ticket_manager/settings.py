@@ -133,3 +133,10 @@ EMAIL_USE_SSL = False
 EMAIL_HOST_USER = 'weihaoran2024@gmail.com'
 EMAIL_HOST_PASSWORD = 'yyaq kdea gjxk mxte'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'events', 'static'),
+]
