@@ -4,72 +4,202 @@
 {% block body_class %}body-home{% endblock %}
 
 {% block navbar %}
-<nav class="navbar navbar-expand-lg sticky-top mb-5" style="background: rgba(255, 255, 255, 0.95); border-bottom: 1px solid rgba(0,0,0,0.05);">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{% url 'home' %}" style="color: #4361ee;">Event Hub</a>
-        <a href="{% url 'home' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4"><i class="bi bi-house-door me-2"></i>Home</a>
+<nav class="navbar navbar-expand-lg sticky-top navbar-custom">
+    <div class="container home-navbar-shell">
+        <a class="navbar-brand navbar-brand-custom fw-bold" href="{% url 'home' %}">University Event Hub</a>
+
+        <div class="d-none d-lg-flex align-items-center flex-wrap nav-actions">
+            {% if user.role == 'society_admin' or user.is_superuser %}
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary btn-sm nav-action">
+                <i class="bi bi-speedometer2 me-1"></i>Admin Dashboard
+            </a>
+            {% endif %}
+
+            <a href="{% url 'home' %}" class="btn btn-light btn-sm nav-action">Events</a>
+
+            <a href="{% url 'account_settings' %}" class="nav-user-chip">
+                <i class="bi bi-person-circle"></i>
+                <span class="small">{{ user.first_name }}</span>
+            </a>
+
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm nav-icon-btn" aria-label="Log out"><i class="bi bi-box-arrow-right"></i></a>
+        </div>
+
+        <div class="dropdown d-lg-none app-mobile-menu">
+            <button class="btn btn-light app-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end app-menu-panel">
+                <div class="app-menu-user">
+                    <i class="bi bi-person-circle"></i>
+                    <span>{{ user.first_name }}</span>
+                </div>
+
+                {% if user.role == 'society_admin' or user.is_superuser %}
+                <a href="{% url 'admin_dashboard' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Admin Dashboard</span>
+                </a>
+                {% endif %}
+
+                <a href="{% url 'home' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-house-door"></i>
+                    <span>Events</span>
+                </a>
+
+                <a href="{% url 'account_settings' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-gear"></i>
+                    <span>Account Settings</span>
+                </a>
+
+                <div class="dropdown-divider"></div>
+
+                <a href="{% url 'logout' %}" class="dropdown-item app-menu-item text-danger">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Log out</span>
+                </a>
+            </div>
+        </div>
     </div>
 </nav>
 {% endblock %}
 
 {% block content %}
-<div class="container py-2">
+<div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-9">
-            <div class="d-flex align-items-center mb-5">
-                <div class="bg-primary rounded-3 p-2 me-3 shadow-sm"><i class="bi bi-ticket-detailed text-white fs-4"></i></div>
-                <h2 class="fw-bold m-0">My Digital Tickets</h2>
+            <div class="ticket-header">
+                <div class="ticket-title-wrap">
+                    <div class="ticket-header-icon"><i class="bi bi-ticket-detailed fs-4"></i></div>
+                    <div>
+                        <p class="eyebrow mb-2">Bookings</p>
+                        <h2 class="ticket-title fw-bold m-0">My event tickets</h2>
+                    </div>
+                </div>
             </div>
             
             {% for ticket in tickets %}
-            <div class="ticket-container shadow-sm mb-4" style="background: white; border-radius: 15px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);">
-                <div class="row g-0 p-4">
-                    <div class="col-md-8 ticket-left border-end">
-                        <div class="d-flex justify-content-between align-items-start mb-3 pe-4">
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Active Ticket</span>
-                            <small class="text-muted">ID: #{{ ticket.id|add:"1000" }}</small>
-                        </div>
-                        <h3 class="fw-bold text-dark mb-2">{{ ticket.event.title }}</h3>
-                        <div class="row mt-4 pe-4">
-                            <div class="col-6">
-                                <p class="text-muted small mb-1"><i class="bi bi-calendar3 me-2"></i>Date & Time</p>
-                                <p class="fw-bold small">{{ ticket.event.start_time|date:"D, M d, Y" }} @ {{ ticket.event.start_time|date:"H:i" }}</p>
+            <div class="ticket-container mb-4">
+                <div class="row g-0 p-4 ticket-layout">
+                    <div class="col-lg-7 ticket-left border-end">
+                        <div class="ticket-main-content pe-4">
+                            <div class="ticket-main-top">
+                                <div class="ticket-main-header">
+                                    <span class="ticket-status ticket-status-{{ ticket.display_status_key }}">{{ ticket.display_status }}</span>
+                                    <small class="ticket-record-id">ID: #{{ ticket.id|add:"1000" }}</small>
+                                </div>
+                                <div class="ticket-title-block">
+                                    <h3 class="fw-bold text-dark mb-0">{{ ticket.event.title }}</h3>
+                                    <div class="ticket-organiser-block">
+                                        <span class="ticket-meta-label d-block mb-1">Organiser</span>
+                                        <p class="ticket-organiser-line mb-0">{{ ticket.event.society.name }}</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-6">
-                                <p class="text-muted small mb-1"><i class="bi bi-geo-alt me-2"></i>Location</p>
-                                <p class="fw-bold small">{{ ticket.event.location }}</p>
+                            <div class="row g-3 ticket-meta-grid">
+                                <div class="col-sm-6">
+                                    <div class="ticket-meta-block">
+                                    <p class="ticket-meta-label mb-1"><i class="bi bi-calendar3 me-2"></i>Date & Time</p>
+                                    <p class="ticket-meta-value mb-0">{{ ticket.event.start_time|date:"D, M d, Y" }} @ {{ ticket.event.start_time|date:"H:i" }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="ticket-meta-block">
+                                    <p class="ticket-meta-label mb-1"><i class="bi bi-geo-alt me-2"></i>Location</p>
+                                    <p class="ticket-meta-value mb-0">{{ ticket.event.location }}</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="mt-4 pe-4">
-                            <span class="text-muted x-small d-block mb-1">REFERENCE CODE</span>
-                            <span class="ticket-code fw-bold text-primary mb-3 d-inline-block">{{ ticket.ticket_code }}</span>
+                            <div class="ticket-footer-row">
+                                <div class="ticket-reference-block">
+                                    <span class="ticket-meta-label d-block mb-1">Reference Code</span>
+                                    <span class="ticket-code fw-bold text-primary d-inline-block">{{ ticket.ticket_code }}</span>
+                                </div>
 
-                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 mt-1 float-end"
-                                    onclick="openCustomModal('Are you sure you want to cancel this ticket?', 'cancelForm_{{ ticket.id }}')">
-                                Cancel Ticket
-                            </button>
+                                <div class="ticket-footer-actions">
+                                    <a href="{% url 'event_detail' ticket.event.id %}" class="btn btn-light btn-sm px-3">View Event</a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm px-3"
+                                            onclick="openCustomModal('Are you sure you want to cancel this ticket?', 'cancelForm_{{ ticket.id }}')">
+                                        Cancel Ticket
+                                    </button>
+                                </div>
 
-                            <form method="POST" action="{% url 'cancel_ticket' ticket.id %}" id="cancelForm_{{ ticket.id }}" style="display: none;">
-                                {% csrf_token %}
-                            </form>
+                                <form method="POST" action="{% url 'cancel_ticket' ticket.id %}" id="cancelForm_{{ ticket.id }}" style="display: none;">
+                                    {% csrf_token %}
+                                </form>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4 ticket-right text-center d-flex flex-column justify-content-center align-items-center">
-                        <div class="qr-wrapper mb-3">
-                            <i class="bi bi-qr-code" style="font-size: 5rem; color: #333;"></i>
+                    <div class="col-lg-5 ticket-right d-flex">
+                        <div class="ticket-side-panel ticket-scan-panel">
+                            <div class="ticket-scan-header">
+                                <p class="ticket-side-label mb-2">Entry Pass</p>
+                            </div>
+                            <div class="ticket-qr-panel">
+                                <div class="ticket-qr-frame">
+                                    <div class="ticket-qr-code" data-qr-value="{{ ticket.ticket_code }}" data-qr-size="148" aria-label="QR code for ticket {{ ticket.ticket_code }}">
+                                        <i class="bi bi-qr-code ticket-qr-fallback"></i>
+                                    </div>
+                                </div>
+                                <p class="ticket-qr-caption">Scan for Entry</p>
+                            </div>
+                            <div class="ticket-side-meta-row">
+                                <div class="ticket-side-block">
+                                <p class="ticket-side-label">Issued</p>
+                                <p class="ticket-side-value">{{ ticket.purchased_at|date:"d M Y, H:i" }}</p>
+                                </div>
+                                <div class="ticket-side-block">
+                                    <p class="ticket-side-label">Status</p>
+                                    <p class="ticket-side-value ticket-side-status ticket-side-status-{{ ticket.display_status_key }}">{{ ticket.display_status }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <p class="small text-muted mb-0">Scan for Entry</p>
                     </div>
                 </div>
             </div>
             {% empty %}
-            <div class="text-center py-5 bg-white rounded-4 shadow-sm">
+            <div class="empty-state-card">
                 <i class="bi bi-ticket-perforated fs-1 text-muted opacity-25"></i>
-                <p class="text-muted mt-3 fs-5">Your ticket box is empty</p>
-                <a href="{% url 'home' %}" class="btn btn-primary rounded-pill px-5 shadow">Find Events</a>
+                <p class="text-muted mt-3 fs-5">You do not have any active tickets yet.</p>
+                <a href="{% url 'home' %}" class="btn btn-primary px-5">Browse Events</a>
             </div>
             {% endfor %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof QRCode === 'undefined') {
+        return;
+    }
+
+    document.querySelectorAll('.ticket-qr-code').forEach(function(node) {
+        if (node.dataset.qrReady === 'true') {
+            return;
+        }
+
+        const qrValue = node.dataset.qrValue;
+        const qrSize = parseInt(node.dataset.qrSize || '148', 10);
+
+        if (!qrValue) {
+            return;
+        }
+
+        node.innerHTML = '';
+        new QRCode(node, {
+            text: qrValue,
+            width: qrSize,
+            height: qrSize,
+            colorDark: '#1f2933',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+        node.dataset.qrReady = 'true';
+    });
+});
+</script>
 {% endblock %}

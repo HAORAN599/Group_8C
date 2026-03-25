@@ -4,7 +4,7 @@ from django.contrib.auth import login, authenticate, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .models import User, Event, Society, Ticket, Review
-from .forms import EventForm, AccountPhoneForm, StyledPasswordChangeForm
+from .forms import EventForm, AccountPhoneForm, StyledPasswordChangeForm, AccountDeletionForm
 from datetime import datetime
 from django.core.mail import send_mail
 from django.conf import settings
@@ -206,6 +206,7 @@ def account_settings(request):
     """Allows users to manage account details without leaving the app flow."""
     phone_form = AccountPhoneForm(instance=request.user)
     password_form = StyledPasswordChangeForm(user=request.user)
+    delete_form = AccountDeletionForm(user=request.user)
     is_admin_user = request.user.role == User.SOCIETY_ADMIN or request.user.is_superuser
 
     if request.method == 'POST':
@@ -224,6 +225,13 @@ def account_settings(request):
                 update_session_auth_hash(request, user)
                 messages.success(request, 'Password updated successfully.')
                 return redirect('account_settings')
+        elif form_type == 'delete_account':
+            delete_form = AccountDeletionForm(request.user, request.POST)
+            if delete_form.is_valid():
+                user = request.user
+                logout(request)
+                user.delete()
+                return redirect('landing')
         else:
             messages.error(request, 'Please submit a valid settings form.')
             return redirect('account_settings')
@@ -231,6 +239,7 @@ def account_settings(request):
     return render(request, 'events/account_settings.html', {
         'phone_form': phone_form,
         'password_form': password_form,
+        'delete_form': delete_form,
         'is_admin_user': is_admin_user,
     })
 

@@ -89,7 +89,7 @@
     {% endif %}
 
     <div class="row g-4 align-items-start">
-        <div class="col-lg-4 order-2 order-lg-1">
+        <div class="col-lg-4">
             <aside class="settings-summary-card">
                 <div class="settings-profile-head">
                     <div class="settings-avatar">
@@ -118,7 +118,7 @@
             </aside>
         </div>
 
-        <div class="col-lg-8 order-1 order-lg-2">
+        <div class="col-lg-8">
             <div class="settings-card">
                 <div class="settings-card-header">
                     <h3 class="fw-bold mb-2">Phone number</h3>
@@ -168,6 +168,43 @@
                     {% endfor %}
 
                     <button type="submit" class="btn btn-primary">Update Password</button>
+                </form>
+            </div>
+
+            <div class="settings-card settings-danger-card">
+                <div class="settings-card-header">
+                    <h3 class="fw-bold mb-2 text-danger">Delete account</h3>
+                    <p class="text-muted mb-0">This permanently removes your account and cannot be undone.</p>
+                </div>
+
+                <div class="settings-danger-note">
+                    <p class="mb-2">Before you continue:</p>
+                    <ul class="settings-danger-list">
+                        <li>Your bookings and account access will be removed immediately.</li>
+                        {% if is_admin_user %}
+                        <li>Your society profile, published events, and registrations will also be removed.</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <form method="post" id="deleteAccountForm" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="delete_account">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small" for="{{ delete_form.current_password.id_for_label }}">Current Password</label>
+                        {{ delete_form.current_password }}
+                        {% for error in delete_form.current_password.errors %}
+                        <div class="text-danger small mt-2">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-danger settings-delete-btn"
+                        onclick="openCustomModal('Delete your account permanently? This action cannot be undone.', 'deleteAccountForm')">
+                        Delete Account
+                    </button>
                 </form>
             </div>
         </div>

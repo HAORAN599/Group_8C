@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 import uuid
 
 # --- Custom User Model ---
@@ -89,6 +90,28 @@ class Ticket(models.Model):
             self.ticket_code = str(uuid.uuid4()).split('-')[0].upper()
         super().save(*args, **kwargs)
 
+    @property
+    def display_status(self):
+        """Returns the user-facing status, including automatic expiry for past events."""
+        if self.status == 'cancelled':
+            return 'Cancelled'
+        if self.status == 'used':
+            return 'Used'
+        if self.event.end_time < timezone.now():
+            return 'Expired'
+        return 'Valid'
+
+    @property
+    def display_status_key(self):
+        """Returns a normalized status key for styling in templates."""
+        if self.status == 'cancelled':
+            return 'cancelled'
+        if self.status == 'used':
+            return 'used'
+        if self.event.end_time < timezone.now():
+            return 'expired'
+        return 'valid'
+
     def __str__(self):
         return f"{self.user.username} - {self.event.title}"
 
@@ -107,4 +130,3 @@ class Review(models.Model):
     class Meta:
         # Prevents multiple reviews from the same user on the same event
         unique_together = ('event', 'user')
-

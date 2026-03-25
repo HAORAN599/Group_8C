@@ -105,3 +105,31 @@ class StyledPasswordChangeForm(PasswordChangeForm):
                 'placeholder': placeholders.get(field_name, ''),
                 'autocomplete': 'current-password' if field_name == 'old_password' else 'new-password',
             })
+
+
+class AccountDeletionForm(forms.Form):
+    """Confirms the user's password before account deletion."""
+
+    current_password = forms.CharField(
+        label='Current Password',
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter your current password',
+                'autocomplete': 'current-password',
+            }
+        ),
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_current_password(self):
+        password = self.cleaned_data.get('current_password')
+
+        if not self.user.check_password(password):
+            raise forms.ValidationError('Enter your current password to delete your account.')
+
+        return password
