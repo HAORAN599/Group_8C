@@ -6,10 +6,22 @@
 
 {% block content %}
 <div class="auth-card text-center">
-    <span class="role-badge">
-        {% if current_role == 'student' %}Student Portal{% else %}Admin Portal{% endif %}
-    </span>
-    <h2 class="fw-bold mb-4">Welcome Back</h2>
+    <div class="auth-role-switch" aria-label="Select portal">
+        <a href="{% url 'login' %}?role=student" class="auth-role-option {% if current_role == 'student' %}is-active{% endif %}">
+            Student
+        </a>
+        <a href="{% url 'login' %}?role=society_admin" class="auth-role-option {% if current_role == 'society_admin' %}is-active{% endif %}">
+            Society Admin
+        </a>
+    </div>
+    <h2 class="auth-title fw-bold">Sign in</h2>
+    <p class="auth-subtitle mb-4">
+        {% if current_role == 'student' %}
+            Sign in to browse campus events, manage your tickets, and keep track of upcoming bookings.
+        {% else %}
+            Sign in to publish events, review registrations, and manage your society's schedule.
+        {% endif %}
+    </p>
 
     {% if error %}
         <div class="alert alert-danger py-2 small">{{ error }}</div>
@@ -25,11 +37,11 @@
             <label class="form-label small fw-bold">Password</label>
             <input type="password" name="password" class="form-control" placeholder="••••••••" required>
         </div>
-        <button type="submit" class="btn btn-primary w-100 fw-bold" style="background: #667eea; border: none; padding: 12px; border-radius: 10px;">Sign In</button>
+        <button type="submit" class="btn btn-primary w-100 fw-bold">Sign In</button>
     </form>
 
     <p class="mt-4 mb-0 small text-muted">
-        New here? <a href="{% url 'register' %}?role={{ current_role }}" class="text-decoration-none fw-bold">Create account</a>
+        Need an account? <a href="{% url 'register' %}?role={{ current_role }}" class="text-decoration-none fw-bold">Register here</a>
     </p>
 </div>
 {% endblock %}
