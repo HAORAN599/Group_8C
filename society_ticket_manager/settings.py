@@ -25,7 +25,11 @@ SECRET_KEY = 'ziook!=j8$@ijpu&+bil0jl%gv)#hmad22@!^jvzg&^j&#=(2g'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['haoranwei.pythonanywhere.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'haoranwei.pythonanywhere.com']
+
+if DEBUG:
+    # Allow LAN testing from another device, such as a phone on the same Wi-Fi.
+    ALLOWED_HOSTS = ['*']
 
 
 # Application definition

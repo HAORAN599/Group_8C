@@ -1,13 +1,73 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-from .models import User, Event, Society, Ticket, Review
-from .forms import EventForm, AccountPhoneForm, StyledPasswordChangeForm, AccountDeletionForm
-from datetime import datetime
-from django.core.mail import send_mail
+import logging
+
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
+from django.db.models import Count, Q
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from .forms import (
+    AccountDeletionForm,
+    AccountPhoneForm,
+    CheckInTicketForm,
+    EventForm,
+    StyledPasswordChangeForm,
+)
+from .models import Event, Society, Ticket, User
+
+
+logger = logging.getLogger(__name__)
+
+
+def _can_manage_event(user, event):
+    """Returns whether the current user is allowed to administer the event."""
+    return user == event.society.admin or user.is_superuser
+
+
+def _get_or_create_managed_society(user):
+    """Ensures each admin account has a minimally valid society record."""
+    return Society.objects.get_or_create(
+        admin=user,
+        defaults={
+            'name': f"Society of {user.first_name or user.username} (ID:{user.id})",
+            'description': 'Society profile pending update.',
+        },
+    )
+
+
+def _process_check_in(event, ticket_code):
+    """Validates a reference code and marks the attendee as checked in."""
+    current_time = timezone.now()
+    ticket = Ticket.objects.select_related('user').filter(
+        event=event,
+        ticket_code__iexact=ticket_code,
+    ).first()
+
+    if not ticket:
+        return False, 'No attendee was found for that reference code.', None
+
+    if ticket.status == 'cancelled':
+        return False, 'That ticket has been cancelled and cannot be checked in.', ticket
+
+    if ticket.status == 'used':
+        attendee_name = ticket.user.first_name or ticket.user.username
+        return False, f'{attendee_name} has already been checked in.', ticket
+
+    if current_time < event.start_time:
+        return False, 'Check-in opens when the event starts.', ticket
+
+    if current_time >= event.end_time:
+        return False, 'This event has already ended, so check-in is closed.', ticket
+
+    ticket.status = 'used'
+    ticket.save(update_fields=['status'])
+    attendee_name = ticket.user.first_name or ticket.user.username
+    return True, f'{attendee_name} has been checked in.', ticket
 
 # --- Authentication Views ---
 
@@ -18,9 +78,11 @@ def login_view(request):
     """
     selected_role = request.GET.get('role', 'student')
     if request.method == 'POST':
-        email = request.POST.get('account', '').strip().lower()
+        account = request.POST.get('account', '').strip()
         password = request.POST.get('password')
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(
+            Q(email__iexact=account) | Q(phone_number=account)
+        ).first()
 
         if user and user.check_password(password):
             # Role-based access control: check if the user has the required role
@@ -107,8 +169,9 @@ def register_view(request):
 
             login(request, user)
             return redirect('home') if db_role == User.STUDENT else redirect('admin_dashboard')
-        except Exception as e:
-            context['error'] = f'Registration failed: {str(e)}'
+        except Exception:
+            logger.exception('Registration failed for %s', email)
+            context['error'] = 'Registration could not be completed. Please review your details and try again.'
             return render(request, 'events/register.html', context)
 
     return render(request, 'events/register.html', {'current_role': selected_role})
@@ -125,17 +188,18 @@ def home(request):
     Displays the event list with a search feature filtering by 
     title, description, location, or society name.
     """
+    events = Event.objects.select_related('society').annotate(ticket_count=Count('tickets'))
     query = request.GET.get('q')
     if query:
         # Complex filtering using Q objects for a better user search experience
-        events = Event.objects.filter(
+        events = events.filter(
             Q(title__icontains=query) | 
             Q(description__icontains=query) | 
             Q(location__icontains=query) |
             Q(society__name__icontains=query)
         ).distinct().order_by('start_time')
     else:
-        events = Event.objects.all().order_by('start_time')
+        events = events.order_by('start_time')
     return render(request, 'events/home.html', {'events': events, 'query': query})
 
 
@@ -145,14 +209,37 @@ def event_detail(request, event_id):
     Displays detailed information for a specific event and handles ticket booking.
     Includes capacity check to prevent overselling, and sends a confirmation email.
     """
-    event = get_object_or_404(Event, id=event_id)
-    is_organizer = request.user == event.society.admin
+    event = get_object_or_404(Event.objects.select_related('society'), id=event_id)
+    current_time = timezone.now()
+    is_organizer = _can_manage_event(request.user, event)
     user_ticket = Ticket.objects.filter(user=request.user, event=event).first()
     already_has_ticket = user_ticket is not None
+    organizer_tickets_queryset = event.tickets.select_related('user').order_by('purchased_at')
+    registration_count = organizer_tickets_queryset.count()
+    checked_in_count = organizer_tickets_queryset.filter(status='used').count()
+    status_order = {
+        'valid': 0,
+        'upcoming': 1,
+        'used': 2,
+        'expired': 3,
+        'cancelled': 4,
+    }
+    organizer_tickets = sorted(
+        organizer_tickets_queryset,
+        key=lambda ticket: (status_order.get(ticket.display_status_key, 4), ticket.purchased_at),
+    )
+    checkin_form = CheckInTicketForm()
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+    event_has_ended = current_time >= event.end_time
 
     if request.method == 'POST' and not already_has_ticket and not is_organizer:
+        if event_has_ended:
+            if is_ajax:
+                return JsonResponse({'message': 'This event has already ended.'}, status=400)
+            return redirect('event_detail', event_id=event.id)
+
         # Validate capacity before ticket creation
-        if event.tickets.count() < event.capacity:
+        if registration_count < event.capacity:
 
             ticket = Ticket.objects.create(user=request.user, event=event)
 
@@ -181,23 +268,81 @@ def event_detail(request, event_id):
                     fail_silently=False,
                 )
             except Exception as e:
+                logger.warning('Booking confirmation email failed for user %s and event %s: %s', request.user.pk, event.pk, e)
 
-                print(f"Error sending email: {e}")
-
+            if is_ajax:
+                return JsonResponse({
+                    'message': 'Registration confirmed.',
+                    'current_count': registration_count + 1,
+                    'capacity': event.capacity,
+                    'ticket_code': ticket.ticket_code,
+                })
 
             return redirect('my_tickets')
+        if is_ajax:
+            return JsonResponse({'message': 'Registration is closed for this event.'}, status=400)
 
     return render(request, 'events/event_detail.html', {
         'event': event,
         'already_has_ticket': already_has_ticket,
         'is_organizer': is_organizer,
         'user_ticket': user_ticket,
+        'organizer_tickets': organizer_tickets,
+        'registration_count': registration_count,
+        'checked_in_count': checked_in_count,
+        'checkin_form': checkin_form,
+        'event_has_ended': event_has_ended,
     })
+
+
+@login_required
+@require_POST
+def check_in_ticket(request, event_id):
+    """Allows an organiser to mark an attendee ticket as used at check-in."""
+    event = get_object_or_404(Event, id=event_id)
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if not _can_manage_event(request.user, event):
+        if is_ajax:
+            return JsonResponse({'message': 'You do not have permission to check in attendees for this event.'}, status=403)
+        return redirect('home')
+
+    form = CheckInTicketForm(request.POST)
+    if not form.is_valid():
+        message = form.errors.get('ticket_code', ['Enter a valid ticket code.'])[0]
+        if is_ajax:
+            return JsonResponse({'message': message}, status=400)
+        messages.error(request, message)
+        return redirect('event_detail', event_id=event.id)
+
+    success, message, ticket = _process_check_in(event, form.cleaned_data['ticket_code'])
+    if is_ajax:
+        response = {
+            'message': message,
+            'checked_in_count': event.tickets.filter(status='used').count(),
+        }
+
+        if ticket is not None:
+            response.update({
+                'ticket_id': ticket.id,
+                'ticket_code': ticket.ticket_code,
+                'status_key': ticket.display_status_key,
+                'status_label': ticket.display_status,
+                'attendee_name': ticket.user.first_name or ticket.user.username,
+            })
+
+        return JsonResponse(response, status=200 if success else 400)
+
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+    return redirect('event_detail', event_id=event.id)
 
 @login_required
 def my_tickets(request):
     """Lists all tickets purchased by the current logged-in student."""
-    tickets = Ticket.objects.filter(user=request.user)
+    tickets = Ticket.objects.filter(user=request.user).select_related('event__society').order_by('-purchased_at')
     return render(request, 'events/my_tickets.html', {'tickets': tickets})
 
 
@@ -251,6 +396,8 @@ def cancel_ticket(request, ticket_id):
     """
     ticket = get_object_or_404(Ticket, id=ticket_id, user=request.user)
     if request.method == 'POST':
+        if ticket.display_status_key not in {'valid', 'upcoming'}:
+            return redirect('my_tickets')
         ticket.delete()
     return redirect('my_tickets')
 
@@ -266,11 +413,8 @@ def admin_dashboard(request):
         return redirect('home')
     
     # Ensure every admin has an associated Society object
-    society, created = Society.objects.get_or_create(
-        admin=request.user, 
-        defaults={'name': f"Society of {request.user.first_name} (ID:{request.user.id})"}
-    )
-    events = society.events.all()
+    society, created = _get_or_create_managed_society(request.user)
+    events = society.events.select_related('society').annotate(ticket_count=Count('tickets')).order_by('start_time')
     total_registrations = Ticket.objects.filter(event__in=events).count()
     return render(request, 'events/admin_dashboard.html', {
         'society': society,
@@ -284,10 +428,7 @@ def create_event(request):
     if request.user.role != User.SOCIETY_ADMIN and not request.user.is_superuser:
         return redirect('home')
 
-    society, created = Society.objects.get_or_create(
-        admin=request.user,
-        defaults={'name': f"Society of {request.user.first_name} (ID:{request.user.id})"}
-    )
+    society, created = _get_or_create_managed_society(request.user)
 
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES)

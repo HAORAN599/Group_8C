@@ -4,40 +4,7 @@
 {% block body_class %}body-admin{% endblock %}
 
 {% block navbar %}
-<nav class="navbar navbar-expand-lg sticky-top navbar-custom">
-    <div class="container dashboard-container dashboard-navbar-shell">
-        <a class="navbar-brand navbar-brand-custom fw-bold" href="{% url 'home' %}">University Event Hub</a>
-        <div class="dashboard-nav-actions d-none d-lg-flex">
-            <div class="nav-user-chip dashboard-user-chip">
-                <i class="bi bi-person-badge"></i>
-                <span class="small">{{ user.first_name }}</span>
-            </div>
-        </div>
-        <div class="dropdown d-lg-none app-mobile-menu">
-            <button class="btn btn-light app-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open menu">
-                <i class="bi bi-list"></i>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end app-menu-panel">
-                <div class="app-menu-user">
-                    <i class="bi bi-person-badge"></i>
-                    <span>{{ user.first_name }}</span>
-                </div>
-
-                <a href="{% url 'home' %}" class="dropdown-item app-menu-item">
-                    <i class="bi bi-house-door"></i>
-                    <span>Student View</span>
-                </a>
-
-                <div class="dropdown-divider"></div>
-
-                <a href="{% url 'logout' %}" class="dropdown-item app-menu-item text-danger">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>Log out</span>
-                </a>
-            </div>
-        </div>
-    </div>
-</nav>
+{% include 'events/includes/admin_nav.html' with show_dashboard_link=False %}
 {% endblock %}
 
 {% block content %}
@@ -57,6 +24,9 @@
                 </div>
                 <a href="{% url 'home' %}" class="btn btn-primary btn-sm w-100 mb-2 fw-bold">
                     <i class="bi bi-house-door me-1"></i>Student View
+                </a>
+                <a href="{% url 'account_settings' %}" class="btn btn-light btn-sm w-100 mb-2 fw-bold">
+                    <i class="bi bi-gear me-1"></i>Account Settings
                 </a>
                 <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm w-100 fw-bold">Logout</a>
             </div>
@@ -112,8 +82,8 @@
                                     <i class="bi bi-geo-alt"></i>{{ event.location }}
                                 </span>
                             </div>
-                            <span class="registration-state {% if event.tickets.count >= event.capacity %}is-full{% else %}is-open{% endif %}">
-                                {% if event.tickets.count >= event.capacity %}Full{% else %}Open{% endif %}
+                            <span class="registration-state {% if event.ticket_count >= event.capacity %}is-full{% else %}is-open{% endif %}">
+                                {% if event.ticket_count >= event.capacity %}Full{% else %}Open{% endif %}
                             </span>
                         </div>
 
@@ -125,13 +95,13 @@
                             </div>
                             <div class="mobile-event-meta">
                                 <span class="mobile-event-label">Registrations</span>
-                                <span class="mobile-event-value">{{ event.tickets.count }} / {{ event.capacity }}</span>
+                                <span class="mobile-event-value">{{ event.ticket_count }} / {{ event.capacity }}</span>
                                 <span class="mobile-event-subvalue">Registered seats</span>
                             </div>
                         </div>
 
                         <div class="progress booking-progress mobile-registration-progress">
-                            <div class="progress-bar bg-primary" style="width: {% widthratio event.tickets.count event.capacity 100 %}%"></div>
+                            <div class="progress-bar bg-primary" style="width: {% if event.capacity %}{% widthratio event.ticket_count event.capacity 100 %}{% else %}0{% endif %}%"></div>
                         </div>
 
                         <div class="action-cluster mobile-action-cluster">
@@ -189,13 +159,13 @@
                                 <td>
                                     <div class="registration-cell">
                                         <div class="registration-meta">
-                                            <span class="registration-count">{{ event.tickets.count }} / {{ event.capacity }}</span>
-                                            <span class="registration-state {% if event.tickets.count >= event.capacity %}is-full{% else %}is-open{% endif %}">
-                                                {% if event.tickets.count >= event.capacity %}Full{% else %}Open{% endif %}
+                                            <span class="registration-count">{{ event.ticket_count }} / {{ event.capacity }}</span>
+                                            <span class="registration-state {% if event.ticket_count >= event.capacity %}is-full{% else %}is-open{% endif %}">
+                                                {% if event.ticket_count >= event.capacity %}Full{% else %}Open{% endif %}
                                             </span>
                                         </div>
                                         <div class="progress booking-progress registration-progress">
-                                            <div class="progress-bar bg-primary" style="width: {% widthratio event.tickets.count event.capacity 100 %}%"></div>
+                                            <div class="progress-bar bg-primary" style="width: {% if event.capacity %}{% widthratio event.ticket_count event.capacity 100 %}{% else %}0{% endif %}%"></div>
                                         </div>
                                         <span class="x-small text-muted mt-2 d-inline-block">Registered seats</span>
                                     </div>

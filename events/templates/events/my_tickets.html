@@ -4,64 +4,7 @@
 {% block body_class %}body-home{% endblock %}
 
 {% block navbar %}
-<nav class="navbar navbar-expand-lg sticky-top navbar-custom">
-    <div class="container home-navbar-shell">
-        <a class="navbar-brand navbar-brand-custom fw-bold" href="{% url 'home' %}">University Event Hub</a>
-
-        <div class="d-none d-lg-flex align-items-center flex-wrap nav-actions">
-            {% if user.role == 'society_admin' or user.is_superuser %}
-            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary btn-sm nav-action">
-                <i class="bi bi-speedometer2 me-1"></i>Admin Dashboard
-            </a>
-            {% endif %}
-
-            <a href="{% url 'home' %}" class="btn btn-light btn-sm nav-action">Events</a>
-
-            <a href="{% url 'account_settings' %}" class="nav-user-chip">
-                <i class="bi bi-person-circle"></i>
-                <span class="small">{{ user.first_name }}</span>
-            </a>
-
-            <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm nav-icon-btn" aria-label="Log out"><i class="bi bi-box-arrow-right"></i></a>
-        </div>
-
-        <div class="dropdown d-lg-none app-mobile-menu">
-            <button class="btn btn-light app-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open menu">
-                <i class="bi bi-list"></i>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end app-menu-panel">
-                <div class="app-menu-user">
-                    <i class="bi bi-person-circle"></i>
-                    <span>{{ user.first_name }}</span>
-                </div>
-
-                {% if user.role == 'society_admin' or user.is_superuser %}
-                <a href="{% url 'admin_dashboard' %}" class="dropdown-item app-menu-item">
-                    <i class="bi bi-speedometer2"></i>
-                    <span>Admin Dashboard</span>
-                </a>
-                {% endif %}
-
-                <a href="{% url 'home' %}" class="dropdown-item app-menu-item">
-                    <i class="bi bi-house-door"></i>
-                    <span>Events</span>
-                </a>
-
-                <a href="{% url 'account_settings' %}" class="dropdown-item app-menu-item">
-                    <i class="bi bi-gear"></i>
-                    <span>Account Settings</span>
-                </a>
-
-                <div class="dropdown-divider"></div>
-
-                <a href="{% url 'logout' %}" class="dropdown-item app-menu-item text-danger">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>Log out</span>
-                </a>
-            </div>
-        </div>
-    </div>
-</nav>
+{% include 'events/includes/student_nav.html' with show_events_link=True show_tickets_link=False show_settings_link=True %}
 {% endblock %}
 
 {% block content %}
@@ -118,10 +61,12 @@
 
                                 <div class="ticket-footer-actions">
                                     <a href="{% url 'event_detail' ticket.event.id %}" class="btn btn-light btn-sm px-3">View Event</a>
-                                    <button type="button" class="btn btn-outline-danger btn-sm px-3"
-                                            onclick="openCustomModal('Are you sure you want to cancel this ticket?', 'cancelForm_{{ ticket.id }}')">
-                                        Cancel Ticket
-                                    </button>
+                                    {% if ticket.display_status_key == 'valid' or ticket.display_status_key == 'upcoming' %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm px-3"
+                                                onclick="openCustomModal('Are you sure you want to cancel this ticket?', 'cancelForm_{{ ticket.id }}')">
+                                            Cancel Ticket
+                                        </button>
+                                    {% endif %}
                                 </div>
 
                                 <form method="POST" action="{% url 'cancel_ticket' ticket.id %}" id="cancelForm_{{ ticket.id }}" style="display: none;">
@@ -135,14 +80,16 @@
                             <div class="ticket-scan-header">
                                 <p class="ticket-side-label mb-2">Entry Pass</p>
                             </div>
-                            <div class="ticket-qr-panel">
-                                <div class="ticket-qr-frame">
-                                    <div class="ticket-qr-code" data-qr-value="{{ ticket.ticket_code }}" data-qr-size="148" aria-label="QR code for ticket {{ ticket.ticket_code }}">
-                                        <i class="bi bi-qr-code ticket-qr-fallback"></i>
+                            {% if ticket.is_qr_active %}
+                                <div class="ticket-qr-panel">
+                                    <div class="ticket-qr-frame">
+                                        <div class="ticket-qr-code" data-qr-value="{{ ticket.ticket_code }}" data-qr-size="148" aria-label="QR code for ticket {{ ticket.ticket_code }}">
+                                            <i class="bi bi-qr-code ticket-qr-fallback"></i>
+                                        </div>
                                     </div>
+                                    <p class="ticket-qr-caption">{{ ticket.entry_pass_caption }}</p>
                                 </div>
-                                <p class="ticket-qr-caption">Scan for Entry</p>
-                            </div>
+                            {% endif %}
                             <div class="ticket-side-meta-row">
                                 <div class="ticket-side-block">
                                 <p class="ticket-side-label">Issued</p>
@@ -153,6 +100,7 @@
                                     <p class="ticket-side-value ticket-side-status ticket-side-status-{{ ticket.display_status_key }}">{{ ticket.display_status }}</p>
                                 </div>
                             </div>
+                            <p class="ticket-side-note mb-0">{{ ticket.entry_pass_note }}</p>
                         </div>
                     </div>
                 </div>

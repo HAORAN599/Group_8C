@@ -4,50 +4,68 @@
 {% block body_class %}body-home{% endblock %}
 
 {% block navbar %}
-<nav class="navbar navbar-dark bg-transparent position-absolute w-100 mt-3">
-    <div class="container">
-        <a href="{% url 'home' %}" class="btn btn-blur rounded-pill text-white px-3" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);">
-            <i class="bi bi-chevron-left me-2"></i>Back to Explore
-        </a>
-    </div>
-</nav>
+{% include 'events/includes/student_nav.html' with show_events_link=False show_tickets_link=True show_settings_link=True %}
 {% endblock %}
 
 {% block content %}
-<div class="hero-banner text-center py-5">
+<section class="detail-hero">
     <div class="container">
-        <span class="badge bg-white text-primary rounded-pill px-4 py-2 mb-3 shadow-sm fw-bold">{{ event.society.name }}</span>
-        <h1 class="display-3 fw-bold mb-5 pb-4 text-shadow text-dark">{{ event.title }}</h1>
+        <a href="{% url 'home' %}" class="detail-inline-back">
+            <i class="bi bi-chevron-left"></i>
+            <span>Back to Events</span>
+        </a>
+        <div class="detail-summary">
+            <span class="detail-hero-badge fw-bold">{{ event.society.name }}</span>
+            <h1 class="page-title fw-bold mb-3 text-dark">{{ event.title }}</h1>
+            <p class="hero-copy mb-0">Review the schedule, venue, and registration details for this event.</p>
+            <div class="detail-hero-actions">
+                <button
+                    type="button"
+                    class="btn btn-light detail-share-btn"
+                    id="shareEventButton"
+                    data-share-title="{{ event.title }}"
+                    data-share-text="Join me at {{ event.title }} on {{ event.start_time|date:'D, d M Y' }} at {{ event.start_time|date:'H:i' }} in {{ event.location }}.">
+                    <i class="bi bi-share me-2"></i>Share Event
+                </button>
+                <span class="detail-share-status" id="shareEventStatus" aria-live="polite"></span>
+            </div>
+        </div>
     </div>
-</div>
+</section>
 
-<div class="container mb-5" style="margin-top: -80px;">
+<div class="container detail-shell">
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card shadow-lg p-4 p-md-5 mb-4 border-0 rounded-4" style="background: white;">
-                <h3 class="fw-bold mb-4">Event Description</h3>
-                <p class="text-secondary lh-lg fs-5 mb-5">{{ event.description }}</p>
+            <div class="detail-panel">
+                <h3 class="fw-bold mb-4">Event Overview</h3>
+                <p class="detail-text mb-5">{{ event.description }}</p>
 
                 <div class="row g-4">
                     <div class="col-sm-6">
-                        <div class="info-pill d-flex align-items-center p-3 bg-light rounded-4">
-                            <i class="bi bi-calendar-event fs-4 me-3 text-primary"></i>
-                            <span>{{ event.start_time|date:"l, M d, Y" }}</span>
+                        <div class="detail-meta-card">
+                            <i class="bi bi-calendar-event"></i>
+                            <div>
+                                <span class="label">Date</span>
+                                <span>{{ event.start_time|date:"l, M d, Y" }}</span>
+                            </div>
                         </div>
                     </div>
                     <div class="col-sm-6">
-                        <div class="info-pill d-flex align-items-center p-3 bg-light rounded-4">
-                            <i class="bi bi-clock fs-4 me-3 text-primary"></i>
-                            <span>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</span>
+                        <div class="detail-meta-card">
+                            <i class="bi bi-clock"></i>
+                            <div>
+                                <span class="label">Time</span>
+                                <span>{{ event.start_time|date:"H:i" }} - {{ event.end_time|date:"H:i" }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm p-4 border-0 rounded-4" style="background: white;">
+            <div class="detail-panel">
                 <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Venue Location</h5>
                 <p class="text-muted">{{ event.location }}</p>
-                <div class="rounded-4 overflow-hidden shadow-sm" style="height: 250px;">
+                <div class="map-frame">
                     <iframe width="100%" height="100%" frameborder="0" style="border:0"
                         src="https://maps.google.com/maps?q={{ event.location|urlencode }}&t=&z=15&ie=UTF8&iwloc=&output=embed">
                     </iframe>
@@ -56,46 +74,171 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="booking-sidebar sticky-top" style="top: 100px;">
-                <div class="card border-0 shadow-lg p-4 rounded-4">
-                    <h4 class="fw-bold mb-4">Quick Reservation</h4>
+            <div class="booking-sidebar sticky-top">
+                <div class="detail-sidebar-card">
+                    <h4 class="fw-bold mb-4">Registration</h4>
 
                     <div class="mb-4">
                         <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted small">Current Occupancy</span>
-                            <span class="fw-bold small"><span id="booked-count">{{ event.tickets.count }}</span> / {{ event.capacity }} booked</span>
+                            <span class="text-muted small">Current Attendance</span>
+                            <span class="fw-bold small">
+                                <span id="booked-count">{{ registration_count }}</span>{% if event.capacity %} / {{ event.capacity }}{% endif %} registered
+                            </span>
                         </div>
-                        <div class="progress" style="height: 10px; background-color: #e9ecef;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                        <div class="progress booking-progress">
+                            <div class="progress-bar"
                                  id="booking-progress-bar"
-                                 style="--booking-pct: {% widthratio event.tickets.count event.capacity 100 %}%; width: var(--booking-pct);"></div>
+                                 style="--booking-pct: {% if event.capacity %}{% widthratio registration_count event.capacity 100 %}{% else %}0{% endif %}%; width: var(--booking-pct);"></div>
                         </div>
                     </div>
 
                     <div id="booking-action-area">
-                        {% if already_has_ticket %}
-                            <div class="alert alert-success border-0 rounded-4 text-center py-3">
-                                <i class="bi bi-check-circle-fill me-2"></i><strong>Registered Successfully!</strong>
+                        {% if is_organizer %}
+                            <div class="booking-info-banner mb-4">
+                                <small class="fw-semibold text-muted">Use the check-in desk below to mark attendees as they arrive.</small>
                             </div>
-                            <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 rounded-pill py-3 fw-bold shadow-sm">
+                        {% elif already_has_ticket %}
+                            <div class="booking-success-banner text-center py-3 mb-3">
+                                <i class="bi bi-check-circle-fill me-2"></i><strong>Registration confirmed</strong>
+                            </div>
+                            <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 py-3 fw-bold">
                                 <i class="bi bi-ticket-perforated me-2"></i>View My Tickets
                             </a>
                         {% else %}
                             <form method="POST" id="ajaxBookingForm">
                                 {% csrf_token %}
-                                <button type="submit" id="btn-submit" class="btn btn-primary w-100 rounded-pill py-3 text-white fw-bold shadow"
-                                    {% if event.tickets.count >= event.capacity %}disabled{% endif %}>
-                                    {% if event.tickets.count >= event.capacity %}Event Full{% else %}Book Ticket Now{% endif %}
+                                <button type="submit" id="btn-submit" class="btn btn-primary w-100 py-3 text-white fw-bold"
+                                    {% if event_has_ended or registration_count >= event.capacity %}disabled{% endif %}>
+                                    {% if event_has_ended %}Event Ended{% elif registration_count >= event.capacity %}Registration Closed{% else %}Register for Event{% endif %}
                                 </button>
                             </form>
                         {% endif %}
                     </div>
 
                     <div class="mt-4 pt-3 border-top">
-                        <ul class="list-unstyled small text-muted">
-                            <li class="mb-2"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Instant Digital Delivery</li>
-                            <li><i class="bi bi-qr-code-scan text-success me-2"></i>Scan to check-in at event</li>
-                        </ul>
+                        {% if is_organizer %}
+                            <div class="organizer-checkin-panel mb-4">
+                                <div class="organizer-checkin-header">
+                                    <div>
+                                        <h6 class="fw-bold mb-1"><i class="bi bi-person-check-fill me-2 text-primary"></i>Check-in Desk</h6>
+                                        <p class="small text-muted mb-0">Enter a reference code or scan a ticket QR code.</p>
+                                    </div>
+                                    <span class="checkin-count-badge">
+                                        <span id="checkedInCount" class="checkin-count-value">{{ checked_in_count }}</span>
+                                        <span class="checkin-count-label">checked in</span>
+                                    </span>
+                                </div>
+
+                                {% if messages %}
+                                    {% for message in messages %}
+                                        <div class="checkin-feedback checkin-feedback-{{ message.tags|default:'info' }}" role="alert">{{ message }}</div>
+                                    {% endfor %}
+                                {% endif %}
+
+                                <div id="checkInFeedback" class="checkin-feedback d-none" aria-live="polite"></div>
+
+                                <form method="POST" action="{% url 'check_in_ticket' event.id %}" id="ticketCheckInForm" class="checkin-form">
+                                    {% csrf_token %}
+                                    <div class="checkin-input-wrap">
+                                        {{ checkin_form.ticket_code }}
+                                    </div>
+                                    <div class="checkin-form-actions">
+                                        <button type="submit" class="btn btn-primary fw-bold" id="manualCheckInButton">Check In</button>
+                                        <button type="button" class="btn btn-light fw-bold" id="scanQrButton">
+                                            <i class="bi bi-qr-code-scan me-2"></i>Scan QR
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <div class="checkin-scanner d-none" id="checkInScanner">
+                                    <div class="checkin-scanner-frame">
+                                        <video id="checkInVideo" class="checkin-video" playsinline muted></video>
+                                    </div>
+                                    <div class="checkin-scanner-meta">
+                                        <span id="checkInScannerStatus" class="small text-muted">Point the camera at a ticket QR code.</span>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm fw-bold" id="stopQrButton">Stop</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="participants-heading">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="bi bi-people-fill me-2 text-primary"></i>
+                                    Registered Participants <span class="badge bg-secondary ms-2">{{ registration_count }}</span>
+                                </h6>
+                                <span class="participants-summary text-muted small">
+                                    <span id="checkedInCountInline" class="participants-summary-count">{{ checked_in_count }}</span>
+                                    <span>checked in</span>
+                                </span>
+                            </div>
+                            {% if organizer_tickets %}
+                                <div class="participants-list" id="participantsList">
+                                    {% for ticket in organizer_tickets %}
+                                        <div class="participant-item" data-ticket-id="{{ ticket.id }}">
+                                            <div class="participant-avatar">
+                                                {{ ticket.user.first_name|first|upper }}
+                                            </div>
+                                            <div class="participant-body">
+                                                <div class="participant-primary-row">
+                                                    <div class="fw-500 participant-name">{{ ticket.user.first_name }}</div>
+                                                    <span class="participant-status participant-status-{{ ticket.display_status_key }}" data-participant-status>{{ ticket.display_status }}</span>
+                                                </div>
+                                                <div class="participant-detail-row">
+                                                    <small class="text-muted">{{ ticket.user.email }}</small>
+                                                    <small class="text-muted">Ticket: <span class="ticket-code-inline">{{ ticket.ticket_code }}</span></small>
+                                                </div>
+                                            </div>
+                                            {% if ticket.display_status_key == 'valid' %}
+                                            <div class="participant-actions">
+                                                    <form method="POST" action="{% url 'check_in_ticket' event.id %}" class="participant-checkin-form">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="ticket_code" value="{{ ticket.ticket_code }}">
+                                                        <button type="submit" class="btn btn-light btn-sm fw-bold participant-action-btn" data-checkin-button>Check In</button>
+                                                    </form>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-4 mb-2 d-block"></i>
+                                    <small>No registrations have been recorded yet.</small>
+                                </div>
+                            {% endif %}
+                        {% elif already_has_ticket and user_ticket %}
+                            <div class="ticket-side-panel">
+                                <span class="ticket-side-badge">Current Registration</span>
+                                {% if user_ticket.is_qr_active %}
+                                    <div class="ticket-qr-panel ticket-qr-panel-compact">
+                                        <div class="ticket-qr-frame ticket-qr-frame-compact">
+                                            <div class="ticket-qr-code" data-qr-value="{{ user_ticket.ticket_code }}" data-qr-size="132" aria-label="QR code for ticket {{ user_ticket.ticket_code }}">
+                                                <i class="bi bi-qr-code ticket-qr-fallback"></i>
+                                            </div>
+                                        </div>
+                                        <p class="ticket-qr-caption">{{ user_ticket.entry_pass_caption }}</p>
+                                    </div>
+                                {% endif %}
+                                <div class="ticket-side-block">
+                                    <p class="ticket-side-label">Ticket Code</p>
+                                    <p class="ticket-side-value ticket-side-code">{{ user_ticket.ticket_code }}</p>
+                                </div>
+                                <div class="ticket-side-block">
+                                    <p class="ticket-side-label">Issued</p>
+                                    <p class="ticket-side-value">{{ user_ticket.purchased_at|date:"D, d M Y H:i" }}</p>
+                                </div>
+                                <div class="ticket-side-block">
+                                    <p class="ticket-side-label">Status</p>
+                                    <p class="ticket-side-value ticket-side-status ticket-side-status-{{ user_ticket.display_status_key }}">{{ user_ticket.display_status }}</p>
+                                </div>
+                                <p class="ticket-side-note mb-0">{{ user_ticket.entry_pass_note }}</p>
+                            </div>
+                        {% else %}
+                            <ul class="detail-note-list small">
+                                <li><i class="bi bi-envelope-check text-warning"></i>Confirmation is issued after successful registration.</li>
+                                <li><i class="bi bi-ticket-perforated text-success"></i>Your ticket reference will be available in My Tickets after registration.</li>
+                            </ul>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -106,8 +249,323 @@
 
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 $(document).ready(function() {
+    if (typeof QRCode !== 'undefined') {
+        document.querySelectorAll('.ticket-qr-code').forEach(function(node) {
+            if (node.dataset.qrReady === 'true') {
+                return;
+            }
+
+            const qrValue = node.dataset.qrValue;
+            const qrSize = parseInt(node.dataset.qrSize || '132', 10);
+
+            if (!qrValue) {
+                return;
+            }
+
+            node.innerHTML = '';
+            new QRCode(node, {
+                text: qrValue,
+                width: qrSize,
+                height: qrSize,
+                colorDark: '#1f2933',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            node.dataset.qrReady = 'true';
+        });
+    }
+
+    const shareButton = document.getElementById('shareEventButton');
+    const shareStatus = document.getElementById('shareEventStatus');
+    let shareStatusTimer = null;
+
+    function updateShareStatus(message, isError = false) {
+        if (!shareStatus) {
+            return;
+        }
+
+        shareStatus.textContent = message;
+        shareStatus.classList.toggle('is-error', isError);
+
+        if (shareStatusTimer) {
+            window.clearTimeout(shareStatusTimer);
+        }
+
+        if (message) {
+            shareStatusTimer = window.setTimeout(function() {
+                shareStatus.textContent = '';
+                shareStatus.classList.remove('is-error');
+            }, 2600);
+        }
+    }
+
+    async function copyShareUrl(url) {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(url);
+            return;
+        }
+
+        const tempField = document.createElement('textarea');
+        tempField.value = url;
+        tempField.setAttribute('readonly', '');
+        tempField.style.position = 'absolute';
+        tempField.style.left = '-9999px';
+        document.body.appendChild(tempField);
+        tempField.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempField);
+    }
+
+    if (shareButton) {
+        shareButton.addEventListener('click', async function() {
+            const title = this.dataset.shareTitle || document.title;
+            const text = this.dataset.shareText || 'Take a look at this event.';
+            const url = window.location.href;
+
+            try {
+                if (navigator.share) {
+                    await navigator.share({ title, text, url });
+                    updateShareStatus('Event link shared.');
+                    return;
+                }
+
+                await copyShareUrl(url);
+                updateShareStatus('Event link copied.');
+            } catch (error) {
+                if (error && error.name === 'AbortError') {
+                    return;
+                }
+
+                updateShareStatus('Unable to share right now.', true);
+            }
+        });
+    }
+
+    const checkInForm = document.getElementById('ticketCheckInForm');
+    const checkInFeedback = document.getElementById('checkInFeedback');
+    const checkedInCount = document.getElementById('checkedInCount');
+    const checkedInCountInline = document.getElementById('checkedInCountInline');
+    const scanQrButton = document.getElementById('scanQrButton');
+    const stopQrButton = document.getElementById('stopQrButton');
+    const checkInScanner = document.getElementById('checkInScanner');
+    const checkInVideo = document.getElementById('checkInVideo');
+    const checkInScannerStatus = document.getElementById('checkInScannerStatus');
+    let scannerStream = null;
+    let scannerTimer = null;
+    let scannerDetector = null;
+    let checkInInFlight = false;
+
+    function setCheckInFeedback(message, tone) {
+        if (!checkInFeedback) {
+            return;
+        }
+
+        checkInFeedback.textContent = message || '';
+        checkInFeedback.classList.remove('d-none', 'checkin-feedback-success', 'checkin-feedback-error', 'checkin-feedback-info');
+
+        if (!message) {
+            checkInFeedback.classList.add('d-none');
+            return;
+        }
+
+        checkInFeedback.classList.add('checkin-feedback-' + (tone || 'info'));
+    }
+
+    function updateCheckedInCount(count) {
+        if (checkedInCount) {
+            checkedInCount.textContent = count;
+        }
+        if (checkedInCountInline) {
+            checkedInCountInline.textContent = count;
+        }
+    }
+
+    function updateParticipantRow(payload) {
+        if (!payload || !payload.ticket_id) {
+            return;
+        }
+
+        const row = document.querySelector('[data-ticket-id="' + payload.ticket_id + '"]');
+        if (!row) {
+            return;
+        }
+
+        const statusNode = row.querySelector('[data-participant-status]');
+        if (statusNode) {
+            statusNode.textContent = payload.status_label;
+            statusNode.className = 'participant-status participant-status-' + payload.status_key;
+        }
+
+        const actionArea = row.querySelector('.participant-actions');
+        if (actionArea) {
+            actionArea.innerHTML = '<span class="participant-checkin-state is-complete">Checked In</span>';
+        }
+    }
+
+    async function submitCheckIn(formElement) {
+        if (!formElement || checkInInFlight) {
+            return;
+        }
+
+        const submitButton = formElement.querySelector('button[type="submit"]');
+        const originalLabel = submitButton ? submitButton.innerHTML : '';
+        const formData = new FormData(formElement);
+        const csrfToken = formElement.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        checkInInFlight = true;
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Checking...';
+        }
+
+        try {
+            const response = await fetch(formElement.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw data;
+            }
+
+            setCheckInFeedback(data.message, 'success');
+            updateCheckedInCount(data.checked_in_count);
+            updateParticipantRow(data);
+
+            const codeInput = checkInForm ? checkInForm.querySelector('input[name="ticket_code"]') : null;
+            if (codeInput) {
+                codeInput.value = '';
+            }
+        } catch (error) {
+            setCheckInFeedback((error && error.message) || 'Unable to check in this attendee right now.', 'error');
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalLabel;
+            }
+            checkInInFlight = false;
+        }
+    }
+
+    if (checkInForm) {
+        checkInForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            submitCheckIn(checkInForm);
+        });
+    }
+
+    document.querySelectorAll('.participant-checkin-form').forEach(function(formElement) {
+        formElement.addEventListener('submit', function(event) {
+            event.preventDefault();
+            submitCheckIn(formElement);
+        });
+    });
+
+    function stopScanner() {
+        if (scannerTimer) {
+            window.clearInterval(scannerTimer);
+            scannerTimer = null;
+        }
+
+        if (scannerStream) {
+            scannerStream.getTracks().forEach(function(track) {
+                track.stop();
+            });
+            scannerStream = null;
+        }
+
+        if (checkInVideo) {
+            checkInVideo.pause();
+            checkInVideo.srcObject = null;
+        }
+
+        if (checkInScanner) {
+            checkInScanner.classList.add('d-none');
+        }
+    }
+
+    async function startScanner() {
+        if (!checkInScanner || !checkInVideo || !checkInForm) {
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setCheckInFeedback('Camera access is not available on this device. Use the ticket code instead.', 'info');
+            return;
+        }
+
+        if (!('BarcodeDetector' in window)) {
+            setCheckInFeedback('QR scanning is not supported here yet. Use the ticket code instead.', 'info');
+            return;
+        }
+
+        try {
+            scannerDetector = new BarcodeDetector({ formats: ['qr_code'] });
+            scannerStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: 'environment' },
+                },
+                audio: false,
+            });
+
+            checkInVideo.srcObject = scannerStream;
+            await checkInVideo.play();
+            checkInScanner.classList.remove('d-none');
+            checkInScannerStatus.textContent = 'Scanning for a ticket QR code...';
+
+            scannerTimer = window.setInterval(async function() {
+                if (!scannerDetector || checkInInFlight || checkInVideo.readyState < 2) {
+                    return;
+                }
+
+                try {
+                    const codes = await scannerDetector.detect(checkInVideo);
+                    if (!codes.length || !codes[0].rawValue) {
+                        return;
+                    }
+
+                    const codeInput = checkInForm.querySelector('input[name="ticket_code"]');
+                    if (!codeInput) {
+                        return;
+                    }
+
+                    codeInput.value = codes[0].rawValue.trim().toUpperCase();
+                    checkInScannerStatus.textContent = 'Ticket found. Checking in attendee...';
+                    stopScanner();
+                    submitCheckIn(checkInForm);
+                } catch (scanError) {
+                    checkInScannerStatus.textContent = 'Unable to read that code yet. Try holding it a bit steadier.';
+                }
+            }, 500);
+        } catch (error) {
+            stopScanner();
+            setCheckInFeedback('Camera access was blocked. Use the ticket code instead.', 'error');
+        }
+    }
+
+    if (scanQrButton) {
+        scanQrButton.addEventListener('click', function() {
+            startScanner();
+        });
+    }
+
+    if (stopQrButton) {
+        stopQrButton.addEventListener('click', function() {
+            stopScanner();
+            if (checkInScannerStatus) {
+                checkInScannerStatus.textContent = 'Scanner stopped.';
+            }
+        });
+    }
+
     // Intercept form submission to use AJAX instead
     $('#ajaxBookingForm').on('submit', function(e) {
         e.preventDefault(); 
@@ -135,16 +593,16 @@ $(document).ready(function() {
             success: function(response) {
                 // Update stats and progress bar dynamically
                 $('#booked-count').text(response.current_count);
-                const newPct = (response.current_count / response.capacity) * 100;
+                const newPct = response.capacity ? (response.current_count / response.capacity) * 100 : 0;
                 $('#booking-progress-bar').css('width', newPct + '%');
 
                 // Update the UI area with a success state without page reload
                 $('#booking-action-area').fadeOut(300, function() {
                     $(this).html(`
-                        <div class="alert alert-success border-0 rounded-4 text-center py-3 animate__animated animate__fadeIn">
-                            <i class="bi bi-check-circle-fill me-2"></i><strong>Booking Confirmed!</strong>
+                        <div class="booking-success-banner text-center py-3 mb-3">
+                            <i class="bi bi-check-circle-fill me-2"></i><strong>Registration confirmed</strong>
                         </div>
-                        <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 rounded-pill py-3 fw-bold shadow-sm">
+                        <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 py-3 fw-bold">
                             <i class="bi bi-ticket-perforated me-2"></i>View My Tickets
                         </a>
                     `).fadeIn(300);
@@ -153,7 +611,7 @@ $(document).ready(function() {
             error: function(xhr) {
                 // Error handling: Alert user and revert button state
                 alert(xhr.responseJSON ? xhr.responseJSON.message : "An error occurred during booking.");
-                btn.prop('disabled', false).text('Book Ticket Now');
+                btn.prop('disabled', false).text('Register for Event');
             }
         });
     }

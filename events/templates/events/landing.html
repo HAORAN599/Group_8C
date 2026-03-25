@@ -5,11 +5,12 @@
 
 {% block content %}
 <div class="hero-card">
-    <h1>University Society<br>Event Hub</h1>
-    <p class="lead mb-5">Discover, follow, and join the best club activities on campus.</p>
+    <p class="eyebrow">University Events Portal</p>
+    <h1>University Society Event Hub</h1>
+    <p class="hero-copy mb-5">A clear and reliable place for students and society organisers to manage campus events without the noise of an app-style interface.</p>
     <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
-        <a href="{% url 'login' %}?role=student" class="btn btn-custom btn-student btn-lg">I'm a Student</a>
-        <a href="{% url 'login' %}?role=society_admin" class="btn btn-custom btn-admin btn-lg">Club Admin</a>
+        <a href="{% url 'login' %}?role=student" class="btn btn-custom btn-student btn-lg">Student Sign In</a>
+        <a href="{% url 'login' %}?role=society_admin" class="btn btn-custom btn-admin btn-lg">Society Admin Sign In</a>
     </div>
 </div>
 {% endblock %}

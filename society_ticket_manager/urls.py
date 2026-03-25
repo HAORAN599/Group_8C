@@ -13,6 +13,7 @@ urlpatterns = [
     path('home/', views.home, name='home'),
     path('account/settings/', views.account_settings, name='account_settings'),
     path('event/<int:event_id>/', views.event_detail, name='event_detail'),
+    path('event/<int:event_id>/check-in/', views.check_in_ticket, name='check_in_ticket'),
     path('my-tickets/', views.my_tickets, name='my_tickets'),
     path('ticket/<int:ticket_id>/cancel/', views.cancel_ticket, name='cancel_ticket'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),

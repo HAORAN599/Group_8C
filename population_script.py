@@ -11,13 +11,13 @@ from datetime import datetime, timedelta
 
 def populate():
     """
-    Populates the database with four high-quality events:
+    Populates the database with four sample events:
     1. Global Food Festival (Precise Date)
-    2. Python AI Workshop
+    2. Python Workshop
     3. Campus Music Fest
-    4. Midnight Stargazing & Cinema (Creative Event)
+    4. Midnight Stargazing & Cinema
     """
-    # 0. Clean old data to ensure a fresh, professional showcase
+    # 0. Clean old data to ensure a fresh demo dataset
     print("Clearing old event data...")
     Event.objects.all().delete()
 
@@ -27,7 +27,7 @@ def populate():
         username=admin_username,
         defaults={
             'email': admin_username,
-            'role': 2, # Society Admin role
+            'role': User.SOCIETY_ADMIN,
             'first_name': 'Global Admin'
         }
     )
@@ -36,11 +36,20 @@ def populate():
         user.save()
 
     # 2. Get or Create Societies for a realistic variety
-    tech_soc, _ = Society.objects.get_or_create(name="Computer Science Society", defaults={'admin': user})
-    music_soc, _ = Society.objects.get_or_create(name="Music & Arts Society", defaults={'admin': user})
-    food_soc, _ = Society.objects.get_or_create(name="Culinary & Cultural Society", defaults={'admin': user})
+    tech_soc, _ = Society.objects.get_or_create(
+        name="Computer Science Society",
+        defaults={'admin': user, 'description': 'Organises technical workshops and student coding events.'},
+    )
+    music_soc, _ = Society.objects.get_or_create(
+        name="Music & Arts Society",
+        defaults={'admin': user, 'description': 'Hosts performances, screenings, and creative showcases.'},
+    )
+    food_soc, _ = Society.objects.get_or_create(
+        name="Culinary & Cultural Society",
+        defaults={'admin': user, 'description': 'Brings together food, culture, and community events.'},
+    )
 
-    # 3. Define the full set of creative and standard events
+    # 3. Define the sample events
     # Images are mapped to your specific file names
     events_data = [
         {
@@ -54,8 +63,8 @@ def populate():
         },
         {
             "soc": tech_soc,
-            "title": "Python AI Workshop 2026",
-            "description": "Learn the basics of Neural Networks with hands-on practice using TensorFlow.",
+            "title": "Python Workshop 2026",
+            "description": "Learn practical Python skills through hands-on exercises and guided examples.",
             "location": "Main Campus, Building A",
             "capacity": 50,
             "start_time": timezone.now() + timedelta(days=14),
@@ -73,7 +82,7 @@ def populate():
         {
             "soc": music_soc,
             "title": "Midnight Stargazing & Open-Air Cinema",
-            "description": "A magical night featuring a 4K screening of 'Interstellar' and telescope stargazing sessions.",
+            "description": "A late-evening screening paired with telescope stargazing sessions.",
             "location": "University Observatory Garden",
             "capacity": 80,
             "start_time": timezone.now() + timedelta(days=7),
@@ -96,9 +105,9 @@ def populate():
         print(f"- Added Event: {data['title']}")
 
 if __name__ == '__main__':
-    print("Starting final 'Super Showcase' population script...")
+    print("Starting population script...")
     try:
         populate()
-        print("Success: Your professional campus platform is now live with 4 diverse events!")
+        print("Success: Sample events have been created.")
     except Exception as e:
         print(f"An error occurred during population: {e}")

@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from .models import Event, User
-from datetime import datetime, time
 
 class EventForm(forms.ModelForm):
     """
@@ -14,7 +13,7 @@ class EventForm(forms.ModelForm):
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S']
     )
-    end_time = forms.TimeField(
+    end_time = forms.DateTimeField(
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S']
     )
@@ -29,23 +28,27 @@ class EventForm(forms.ModelForm):
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
-            'capacity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
     def clean(self):
         cleaned_data = super().clean()
         start_dt = cleaned_data.get('start_time')
-        end_t = cleaned_data.get('end_time')
+        end_dt = cleaned_data.get('end_time')
 
-
-        if start_dt and end_t and isinstance(end_t, time):
-
-            cleaned_data['end_time'] = datetime.combine(
-                start_dt.date(), end_t, tzinfo=start_dt.tzinfo
-            )
+        if start_dt and end_dt and end_dt <= start_dt:
+            self.add_error('end_time', 'End time must be later than the start time.')
 
         return cleaned_data
+
+    def clean_capacity(self):
+        capacity = self.cleaned_data.get('capacity')
+
+        if capacity is not None and capacity < 1:
+            raise forms.ValidationError('Capacity must be at least 1.')
+
+        return capacity
 
 
 class AccountPhoneForm(forms.ModelForm):
@@ -133,3 +136,29 @@ class AccountDeletionForm(forms.Form):
             raise forms.ValidationError('Enter your current password to delete your account.')
 
         return password
+
+
+class CheckInTicketForm(forms.Form):
+    """Allows organisers to validate a ticket reference code at check-in."""
+
+    ticket_code = forms.CharField(
+        label='Reference Code',
+        max_length=50,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Reference code',
+                'autocomplete': 'off',
+                'spellcheck': 'false',
+                'autocapitalize': 'characters',
+            }
+        ),
+    )
+
+    def clean_ticket_code(self):
+        ticket_code = (self.cleaned_data.get('ticket_code') or '').strip().upper()
+
+        if not ticket_code:
+            raise forms.ValidationError('Enter a ticket code to check in an attendee.')
+
+        return ticket_code

@@ -90,27 +90,62 @@ class Ticket(models.Model):
             self.ticket_code = str(uuid.uuid4()).split('-')[0].upper()
         super().save(*args, **kwargs)
 
-    @property
-    def display_status(self):
-        """Returns the user-facing status, including automatic expiry for past events."""
-        if self.status == 'cancelled':
-            return 'Cancelled'
-        if self.status == 'used':
-            return 'Used'
-        if self.event.end_time < timezone.now():
-            return 'Expired'
-        return 'Valid'
+    def _resolved_status_key(self, current_time=None):
+        """Calculates the live ticket state from the booking status and event window."""
+        current_time = current_time or timezone.now()
 
-    @property
-    def display_status_key(self):
-        """Returns a normalized status key for styling in templates."""
         if self.status == 'cancelled':
             return 'cancelled'
         if self.status == 'used':
             return 'used'
-        if self.event.end_time < timezone.now():
+        if current_time < self.event.start_time:
+            return 'upcoming'
+        if current_time >= self.event.end_time:
             return 'expired'
         return 'valid'
+
+    @property
+    def display_status(self):
+        """Returns the user-facing status, including the event access window."""
+        return {
+            'valid': 'Valid',
+            'upcoming': 'Upcoming',
+            'used': 'Used',
+            'expired': 'Expired',
+            'cancelled': 'Cancelled',
+        }[self.display_status_key]
+
+    @property
+    def display_status_key(self):
+        """Returns a normalized status key for styling in templates."""
+        return self._resolved_status_key()
+
+    @property
+    def is_qr_active(self):
+        """A QR code should only be scannable while the event is in progress."""
+        return self.display_status_key == 'valid'
+
+    @property
+    def entry_pass_caption(self):
+        """Short label shown under the ticket QR area."""
+        return {
+            'valid': 'Scan for Entry',
+            'upcoming': 'Available at Start Time',
+            'used': 'Already Checked In',
+            'expired': 'Entry Closed',
+            'cancelled': 'Ticket Cancelled',
+        }[self.display_status_key]
+
+    @property
+    def entry_pass_note(self):
+        """Context explaining whether the QR code can be used right now."""
+        return {
+            'valid': 'Present this QR code or reference code at check-in.',
+            'upcoming': 'This QR code will activate when the event begins.',
+            'used': 'This ticket has already been scanned at check-in.',
+            'expired': 'This event has ended, so the QR code is no longer valid.',
+            'cancelled': 'This booking has been cancelled and can no longer be used.',
+        }[self.display_status_key]
 
     def __str__(self):
         return f"{self.user.username} - {self.event.title}"

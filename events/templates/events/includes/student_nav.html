@@ -1,0 +1,82 @@
+<nav class="navbar navbar-expand-lg sticky-top navbar-custom">
+    <div class="container home-navbar-shell">
+        <a class="navbar-brand navbar-brand-custom fw-bold" href="{% url 'home' %}">University Event Hub</a>
+
+        <div class="d-none d-lg-flex align-items-center flex-wrap nav-actions">
+            {% if user.role == 'society_admin' or user.is_superuser %}
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary btn-sm nav-action">
+                <i class="bi bi-speedometer2 me-1"></i>Admin Dashboard
+            </a>
+            {% endif %}
+
+            {% if show_events_link %}
+            <a href="{% url 'home' %}" class="btn btn-light btn-sm nav-action">Events</a>
+            {% endif %}
+
+            {% if show_tickets_link %}
+            <a href="{% url 'my_tickets' %}" class="btn btn-light btn-sm nav-action">My Tickets</a>
+            {% endif %}
+
+            {% if account_chip_current %}
+            <span class="nav-user-chip is-current">
+                <i class="bi {% if account_chip_icon %}{{ account_chip_icon }}{% else %}bi-gear{% endif %}"></i>
+                <span class="small">{% firstof user.first_name user.username %}</span>
+            </span>
+            {% else %}
+            <a href="{% url 'account_settings' %}" class="nav-user-chip">
+                <i class="bi {% if account_chip_icon %}{{ account_chip_icon }}{% else %}bi-person-circle{% endif %}"></i>
+                <span class="small">{% firstof user.first_name user.username %}</span>
+            </a>
+            {% endif %}
+
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm nav-icon-btn" aria-label="Log out"><i class="bi bi-box-arrow-right"></i></a>
+        </div>
+
+        <div class="dropdown d-lg-none app-mobile-menu">
+            <button class="btn btn-light app-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end app-menu-panel">
+                <div class="app-menu-user">
+                    <i class="bi bi-person-circle"></i>
+                    <span>{% firstof user.first_name user.username %}</span>
+                </div>
+
+                {% if user.role == 'society_admin' or user.is_superuser %}
+                <a href="{% url 'admin_dashboard' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Admin Dashboard</span>
+                </a>
+                {% endif %}
+
+                {% if show_events_link %}
+                <a href="{% url 'home' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-house-door"></i>
+                    <span>Events</span>
+                </a>
+                {% endif %}
+
+                {% if show_settings_link %}
+                <a href="{% url 'account_settings' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-gear"></i>
+                    <span>Account Settings</span>
+                </a>
+                {% endif %}
+
+                {% if show_tickets_link %}
+                <a href="{% url 'my_tickets' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-ticket-perforated"></i>
+                    <span>My Tickets</span>
+                </a>
+                {% endif %}
+
+                <div class="dropdown-divider"></div>
+
+                <a href="{% url 'logout' %}" class="dropdown-item app-menu-item text-danger">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Log out</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
