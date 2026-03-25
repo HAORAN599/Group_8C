@@ -214,6 +214,9 @@ a:hover {
 .sidebar,
 .table-card,
 .event-form-card,
+.settings-hero-card,
+.settings-card,
+.settings-summary-card,
 .ticket-container,
 .empty-state-card,
 .stat-card {
@@ -362,6 +365,21 @@ a:hover {
     border-radius: var(--radius-pill);
     color: var(--text-muted);
     font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-user-chip:hover,
+.nav-user-chip:focus {
+    background: var(--surface-soft);
+    border-color: var(--line-strong);
+    color: var(--brand);
+}
+
+.nav-user-chip.is-current {
+    background: var(--brand-soft);
+    border-color: var(--line);
+    color: var(--brand);
 }
 
 .nav-icon-btn {
@@ -1054,6 +1072,95 @@ a:hover {
     text-transform: uppercase;
 }
 
+.settings-shell {
+    padding: 0 0 4rem;
+}
+
+.settings-container {
+    width: min(100% - 2rem, 1120px);
+    max-width: none;
+    margin-inline: auto;
+    padding-inline: 0;
+}
+
+.settings-summary-card,
+.settings-card {
+    padding: 2rem;
+}
+
+.settings-summary-card {
+    position: sticky;
+    top: 5.5rem;
+}
+
+.settings-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-round);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.settings-profile-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.settings-name {
+    margin-bottom: 0.2rem;
+    color: var(--text-dark);
+}
+
+.settings-role {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.settings-meta-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.settings-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+}
+
+.settings-meta-label {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.settings-card + .settings-card {
+    margin-top: 1.5rem;
+}
+
+.settings-card-header {
+    margin-bottom: 1.5rem;
+}
+
+.settings-alert {
+    border-radius: var(--radius-md);
+    margin-bottom: 1.25rem;
+}
+
 .ticket-header {
     margin-bottom: 2rem;
 }
@@ -1169,8 +1276,11 @@ a:hover {
     .hero-card,
     .home-hero,
     .event-form-card,
+    .settings-hero-card,
     .detail-panel,
-    .detail-sidebar-card {
+    .detail-sidebar-card,
+    .settings-card,
+    .settings-summary-card {
         padding: 2rem;
     }
 
@@ -1276,6 +1386,39 @@ a:hover {
 
     .event-form-card {
         padding: 2.25rem 1.5rem;
+    }
+
+    .settings-shell {
+        padding: 0 0 3rem;
+    }
+
+    .settings-container {
+        width: calc(100% - 1rem);
+    }
+
+    .settings-summary-card {
+        position: static;
+    }
+
+    .settings-profile-head {
+        align-items: center;
+        gap: 0.9rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .settings-avatar {
+        width: 64px;
+        height: 64px;
+        font-size: 1.55rem;
+    }
+
+    .settings-name {
+        font-size: 1.15rem;
+    }
+
+    .settings-card .btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .table-card-header-row {

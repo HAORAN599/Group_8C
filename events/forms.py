@@ -1,5 +1,6 @@
 from django import forms
-from .models import Event
+from django.contrib.auth.forms import PasswordChangeForm
+from .models import Event, User
 from datetime import datetime, time
 
 class EventForm(forms.ModelForm):
@@ -45,3 +46,62 @@ class EventForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class AccountPhoneForm(forms.ModelForm):
+    """Updates the phone number used on the account."""
+
+    phone_number = forms.CharField(
+        max_length=20,
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter your phone number',
+                'autocomplete': 'tel',
+            }
+        ),
+    )
+
+    class Meta:
+        model = User
+        fields = ['phone_number']
+
+    def clean_phone_number(self):
+        phone_number = (self.cleaned_data.get('phone_number') or '').strip()
+
+        if not phone_number:
+            raise forms.ValidationError('Please enter a phone number.')
+
+        if User.objects.exclude(pk=self.instance.pk).filter(phone_number=phone_number).exists():
+            raise forms.ValidationError('This phone number is already in use.')
+
+        return phone_number
+
+
+class StyledPasswordChangeForm(PasswordChangeForm):
+    """Password change form with app styling hooks."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        labels = {
+            'old_password': 'Current Password',
+            'new_password1': 'New Password',
+            'new_password2': 'Confirm New Password',
+        }
+
+        placeholders = {
+            'old_password': 'Enter your current password',
+            'new_password1': 'Enter a new password',
+            'new_password2': 'Re-enter the new password',
+        }
+
+        for field_name, field in self.fields.items():
+            field.label = labels.get(field_name, field.label)
+            field.help_text = None
+            field.widget.attrs.update({
+                'class': 'form-control',
+                'placeholder': placeholders.get(field_name, ''),
+                'autocomplete': 'current-password' if field_name == 'old_password' else 'new-password',
+            })

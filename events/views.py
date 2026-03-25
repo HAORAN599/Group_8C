@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate, logout
+from django.contrib import messages
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .models import User, Event, Society, Ticket, Review
-from .forms import EventForm
+from .forms import EventForm, AccountPhoneForm, StyledPasswordChangeForm
 from datetime import datetime
 from django.core.mail import send_mail
 from django.conf import settings
@@ -13,14 +14,13 @@ from django.conf import settings
 def login_view(request):
     """
     Handles user login for both Students and Society Admins.
-    Supports login via Email or Phone Number using a Q object query.
+    Uses email as the sign-in identifier.
     """
     selected_role = request.GET.get('role', 'student')
     if request.method == 'POST':
-        account = request.POST.get('account')
+        email = request.POST.get('account', '').strip().lower()
         password = request.POST.get('password')
-        # Allow users to login with either email or phone number
-        user = User.objects.filter(Q(email=account) | Q(phone_number=account)).first()
+        user = User.objects.filter(email=email).first()
 
         if user and user.check_password(password):
             # Role-based access control: check if the user has the required role
@@ -40,7 +40,7 @@ def login_view(request):
 
         else:
             return render(request, 'events/login.html', {
-                'error': 'Account or password incorrect.',
+                'error': 'Email or password incorrect.',
                 'current_role': selected_role
             })
 
@@ -51,8 +51,8 @@ def register_view(request):
     selected_role = request.GET.get('role', 'student')
     if request.method == 'POST':
         name = request.POST.get('name')
-        email = request.POST.get('email').strip().lower()
-        phone = request.POST.get('phone')
+        email = request.POST.get('email', '').strip().lower()
+        phone = request.POST.get('phone', '').strip()
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
         context = {'current_role': selected_role}
@@ -62,19 +62,20 @@ def register_view(request):
             context['error'] = 'Passwords do not match.'
             return render(request, 'events/register.html', context)
 
-        # user whether exit
-        existing_user = User.objects.filter(Q(email=email) | Q(phone_number=phone)).first()
+        existing_email_user = User.objects.filter(email=email).first()
+        existing_phone_user = User.objects.filter(phone_number=phone).exclude(email=email).first() if phone else None
 
-        if existing_user:
+        if existing_email_user:
 
-            if selected_role == 'society_admin' and existing_user.role == User.STUDENT:
+            if selected_role == 'society_admin' and existing_email_user.role == User.STUDENT:
 
-                if existing_user.check_password(password):
-                    existing_user.role = User.SOCIETY_ADMIN
-                    existing_user.first_name = name
-                    existing_user.save()
+                if existing_email_user.check_password(password):
+                    existing_email_user.role = User.SOCIETY_ADMIN
+                    existing_email_user.first_name = name
+                    existing_email_user.phone_number = phone
+                    existing_email_user.save()
 
-                    login(request, existing_user)
+                    login(request, existing_email_user)
                     return redirect('admin_dashboard')
                 else:
 
@@ -84,7 +85,11 @@ def register_view(request):
 
 
             else:
-                context['error'] = 'This email or phone number is already registered.'
+                context['error'] = 'This email address is already registered.'
+                return render(request, 'events/register.html', context)
+
+        if existing_phone_user:
+                context['error'] = 'This phone number is already attached to another account.'
                 return render(request, 'events/register.html', context)
 
         # for new
@@ -141,9 +146,11 @@ def event_detail(request, event_id):
     Includes capacity check to prevent overselling, and sends a confirmation email.
     """
     event = get_object_or_404(Event, id=event_id)
-    already_has_ticket = Ticket.objects.filter(user=request.user, event=event).exists()
+    is_organizer = request.user == event.society.admin
+    user_ticket = Ticket.objects.filter(user=request.user, event=event).first()
+    already_has_ticket = user_ticket is not None
 
-    if request.method == 'POST' and not already_has_ticket:
+    if request.method == 'POST' and not already_has_ticket and not is_organizer:
         # Validate capacity before ticket creation
         if event.tickets.count() < event.capacity:
 
@@ -182,7 +189,9 @@ def event_detail(request, event_id):
 
     return render(request, 'events/event_detail.html', {
         'event': event,
-        'already_has_ticket': already_has_ticket
+        'already_has_ticket': already_has_ticket,
+        'is_organizer': is_organizer,
+        'user_ticket': user_ticket,
     })
 
 @login_required
@@ -190,6 +199,40 @@ def my_tickets(request):
     """Lists all tickets purchased by the current logged-in student."""
     tickets = Ticket.objects.filter(user=request.user)
     return render(request, 'events/my_tickets.html', {'tickets': tickets})
+
+
+@login_required
+def account_settings(request):
+    """Allows users to manage account details without leaving the app flow."""
+    phone_form = AccountPhoneForm(instance=request.user)
+    password_form = StyledPasswordChangeForm(user=request.user)
+    is_admin_user = request.user.role == User.SOCIETY_ADMIN or request.user.is_superuser
+
+    if request.method == 'POST':
+        form_type = request.POST.get('form_type')
+
+        if form_type == 'phone':
+            phone_form = AccountPhoneForm(request.POST, instance=request.user)
+            if phone_form.is_valid():
+                phone_form.save()
+                messages.success(request, 'Phone number updated successfully.')
+                return redirect('account_settings')
+        elif form_type == 'password':
+            password_form = StyledPasswordChangeForm(user=request.user, data=request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Password updated successfully.')
+                return redirect('account_settings')
+        else:
+            messages.error(request, 'Please submit a valid settings form.')
+            return redirect('account_settings')
+
+    return render(request, 'events/account_settings.html', {
+        'phone_form': phone_form,
+        'password_form': password_form,
+        'is_admin_user': is_admin_user,
+    })
 
 @login_required
 def cancel_ticket(request, ticket_id):
@@ -219,7 +262,12 @@ def admin_dashboard(request):
         defaults={'name': f"Society of {request.user.first_name} (ID:{request.user.id})"}
     )
     events = society.events.all()
-    return render(request, 'events/admin_dashboard.html', {'society': society, 'events': events})
+    total_registrations = Ticket.objects.filter(event__in=events).count()
+    return render(request, 'events/admin_dashboard.html', {
+        'society': society,
+        'events': events,
+        'total_registrations': total_registrations,
+    })
 
 @login_required
 def create_event(request):

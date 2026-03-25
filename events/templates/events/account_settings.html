@@ -1,0 +1,176 @@
+{% extends 'events/base.html' %}
+
+{% block title %}Account Settings - Event Hub{% endblock %}
+{% block body_class %}body-home{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg sticky-top navbar-custom">
+    <div class="container home-navbar-shell">
+        <a class="navbar-brand navbar-brand-custom fw-bold" href="{% url 'home' %}">University Event Hub</a>
+
+        <div class="d-none d-lg-flex align-items-center flex-wrap nav-actions">
+            {% if is_admin_user %}
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary btn-sm nav-action">
+                <i class="bi bi-speedometer2 me-1"></i>Admin Dashboard
+            </a>
+            {% endif %}
+
+            <a href="{% url 'home' %}" class="btn btn-light btn-sm nav-action">Events</a>
+            <a href="{% url 'my_tickets' %}" class="btn btn-light btn-sm nav-action">My Tickets</a>
+
+            <span class="nav-user-chip is-current">
+                <i class="bi bi-gear"></i>
+                <span class="small">{% firstof user.first_name user.username %}</span>
+            </span>
+
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm nav-icon-btn" aria-label="Log out"><i class="bi bi-box-arrow-right"></i></a>
+        </div>
+
+        <div class="dropdown d-lg-none app-mobile-menu">
+            <button class="btn btn-light app-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end app-menu-panel">
+                <div class="app-menu-user">
+                    <i class="bi bi-person-circle"></i>
+                    <span>{% firstof user.first_name user.username %}</span>
+                </div>
+
+                {% if is_admin_user %}
+                <a href="{% url 'admin_dashboard' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Admin Dashboard</span>
+                </a>
+                {% endif %}
+
+                <a href="{% url 'home' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-house-door"></i>
+                    <span>Events</span>
+                </a>
+
+                <a href="{% url 'my_tickets' %}" class="dropdown-item app-menu-item">
+                    <i class="bi bi-ticket-perforated"></i>
+                    <span>My Tickets</span>
+                </a>
+
+                <div class="dropdown-divider"></div>
+
+                <a href="{% url 'logout' %}" class="dropdown-item app-menu-item text-danger">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Log out</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="detail-hero">
+    <div class="container settings-container">
+        <a href="{% if is_admin_user %}{% url 'admin_dashboard' %}{% else %}{% url 'home' %}{% endif %}" class="detail-inline-back">
+            <i class="bi bi-chevron-left"></i>
+            <span>{% if is_admin_user %}Back to Dashboard{% else %}Back to Events{% endif %}</span>
+        </a>
+        <div class="detail-summary">
+            <h1 class="page-title fw-bold mb-3">Account settings</h1>
+            <p class="hero-copy mb-0">Manage your sign-in details and keep your contact information up to date.</p>
+        </div>
+    </div>
+</section>
+
+<div class="container settings-container settings-shell">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-secondary{% endif %} settings-alert" role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-4 order-2 order-lg-1">
+            <aside class="settings-summary-card">
+                <div class="settings-profile-head">
+                    <div class="settings-avatar">
+                        {% if user.first_name %}{{ user.first_name|first|upper }}{% else %}{{ user.username|first|upper }}{% endif %}
+                    </div>
+                    <div>
+                        <h2 class="settings-name">{% firstof user.first_name user.username %}</h2>
+                        <p class="settings-role mb-0">{{ user.get_role_display }}</p>
+                    </div>
+                </div>
+
+                <div class="settings-meta-list">
+                    <div class="settings-meta-item">
+                        <span class="settings-meta-label">Email</span>
+                        <strong>{{ user.email }}</strong>
+                    </div>
+                    <div class="settings-meta-item">
+                        <span class="settings-meta-label">Current Phone</span>
+                        <strong>{{ user.phone_number|default:"Not added yet" }}</strong>
+                    </div>
+                    <div class="settings-meta-item">
+                        <span class="settings-meta-label">Sign-In Options</span>
+                        <strong>Email or phone number</strong>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <div class="col-lg-8 order-1 order-lg-2">
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h3 class="fw-bold mb-2">Phone number</h3>
+                    <p class="text-muted mb-0">This number is used as one of your sign-in options and for account contact details.</p>
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="phone">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small" for="{{ phone_form.phone_number.id_for_label }}">Phone Number</label>
+                        {{ phone_form.phone_number }}
+                        {% for error in phone_form.phone_number.errors %}
+                        <div class="text-danger small mt-2">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Phone Number</button>
+                </form>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <h3 class="fw-bold mb-2">Password</h3>
+                    <p class="text-muted mb-0">Choose a new password if you want to rotate your sign-in credentials.</p>
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="password">
+
+                    {% if password_form.non_field_errors %}
+                        {% for error in password_form.non_field_errors %}
+                        <div class="text-danger small mb-3">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% for field in password_form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}
+                        <div class="text-danger small mt-2">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
