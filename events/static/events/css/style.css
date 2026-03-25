@@ -729,8 +729,7 @@ a:hover {
 }
 
 .organizer-banner,
-.booking-success-banner,
-.booking-info-banner {
+.booking-success-banner {
     border-radius: var(--radius-md);
     padding: 1rem 1.1rem;
     border: 1px solid var(--line);
@@ -744,12 +743,6 @@ a:hover {
 .booking-success-banner {
     background: #edf5f1;
     color: var(--success);
-}
-
-.booking-info-banner {
-    background: #f4f1ea;
-    color: var(--text-dark);
-    border-color: var(--line);
 }
 
 .participants-list {
