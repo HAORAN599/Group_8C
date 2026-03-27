@@ -69,6 +69,13 @@ class EventHubTests(TestCase):
         response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 302)
 
+    def test_landing_page_is_public(self):
+        """The public landing page should be reachable without authentication."""
+        response = self.client.get(reverse('landing'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'University Society Event Hub')
+
     def test_successful_booking_logic(self):
         """Test the booking process: Login -> View Detail -> Post Booking."""
         self.client.login(username='student@uog.com', password='password123')
@@ -78,6 +85,19 @@ class EventHubTests(TestCase):
         
         # Should redirect to 'my_tickets' after successful booking
         self.assertEqual(response.status_code, 302)
+        self.assertTrue(Ticket.objects.filter(user=self.student_user, event=self.event).exists())
+
+    def test_successful_booking_ajax_returns_updated_count(self):
+        """AJAX booking should respond with the updated registration metrics."""
+        self.client.login(username='student@uog.com', password='password123')
+
+        response = self.client.post(
+            reverse('event_detail', args=[self.event.id]),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['current_count'], 1)
         self.assertTrue(Ticket.objects.filter(user=self.student_user, event=self.event).exists())
 
     def test_login_accepts_phone_number(self):
@@ -343,3 +363,66 @@ class EventHubTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse('landing'))
         self.assertFalse(User.objects.filter(pk=self.student_user.pk).exists())
+
+    def test_admin_can_create_event(self):
+        """Society admins should be able to create a new event."""
+        self.client.login(username='admin@uog.com', password='password123')
+
+        response = self.client.post(reverse('create_event'), {
+            'title': 'Freshers Fair',
+            'description': 'Welcome event for new members.',
+            'location': 'Atrium',
+            'start_time': '2026-04-10T18:00',
+            'end_time': '2026-04-10T20:00',
+            'capacity': 120,
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Event.objects.filter(title='Freshers Fair', society=self.society).exists())
+
+    def test_admin_can_edit_owned_event(self):
+        """Society admins should be able to edit their own event."""
+        self.client.login(username='admin@uog.com', password='password123')
+
+        response = self.client.post(reverse('edit_event', args=[self.event.id]), {
+            'title': 'Updated Workshop',
+            'description': 'Updated description.',
+            'location': 'Library Room 2',
+            'start_time': '2026-04-10T18:00',
+            'end_time': '2026-04-10T20:00',
+            'capacity': 80,
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.title, 'Updated Workshop')
+        self.assertEqual(self.event.location, 'Library Room 2')
+
+    def test_non_owner_cannot_edit_event(self):
+        """Students should be blocked from editing admin-owned events."""
+        self.client.login(username='student@uog.com', password='password123')
+
+        response = self.client.get(reverse('edit_event', args=[self.event.id]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('admin_dashboard'))
+
+    def test_admin_can_delete_owned_event(self):
+        """Deleting an event should remove it from the database."""
+        self.client.login(username='admin@uog.com', password='password123')
+
+        response = self.client.post(reverse('delete_event', args=[self.event.id]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Event.objects.filter(pk=self.event.pk).exists())
+
+    def test_population_script_creates_demo_dataset(self):
+        """The standalone population script should build a useful demo dataset."""
+        from population_script import populate
+
+        populate()
+
+        self.assertGreaterEqual(Event.objects.count(), 6)
+        self.assertGreaterEqual(Ticket.objects.count(), 8)
+        self.assertTrue(User.objects.filter(role=User.SOCIETY_ADMIN, email='tech_admin@uog.com').exists())
+        self.assertTrue(User.objects.filter(role=User.STUDENT, email='amy.student@uog.com').exists())
