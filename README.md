@@ -5,6 +5,7 @@ This is a Django-based web application designed for university societies to mana
 
 
 * **Live Demo**: [https://haoranwei.pythonanywhere.com/](https://haoranwei.pythonanywhere.com/)
+* **GitHub Repository**: [https://github.com/HAORAN599/Group_8C](https://github.com/HAORAN599/Group_8C)
 
 ---
 
@@ -29,7 +30,7 @@ This is a Django-based web application designed for university societies to mana
 ## 🛠️ Technology Stack
 * **Backend**: Django (Python 3.11)
 * **Environment Management**: `venv` (Virtual Environment)
-* **Mapping**: (e.g., Google Maps API / Leaflet - *update if applicable*)
+* **Mapping**: Google Maps Embed
 * **Emailing**: Django SMTP Backend
 
 ---
@@ -64,3 +65,15 @@ python population_script.py
 ```bash
 python manage.py runserver
 ```
+
+### 5. Run the Test Suite
+```bash
+python manage.py test
+```
+
+The application can be recreated on a fresh machine by installing the packages from `requirements.txt`, running migrations, and then executing `population_script.py` to load sample data.
+
+---
+
+## 📌 External Sources
+This project uses Bootstrap 5, Bootstrap Icons, jQuery, QRCode.js, and Google Maps Embed for layout, styling, interactivity, QR generation, and location display.
