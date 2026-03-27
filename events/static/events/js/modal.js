@@ -1,25 +1,68 @@
-let formToSubmitId = null;
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('customConfirmModal');
+    const modalMessage = document.getElementById('customModalMessage');
+    const confirmButton = document.getElementById('customModalConfirmBtn');
+    let formToSubmitId = null;
 
-function openCustomModal(message, targetFormId) {
-    document.getElementById('customModalMessage').innerText = message;
-    formToSubmitId = targetFormId;
-    document.getElementById('customConfirmModal').style.display = 'flex';
-}
-
-function closeCustomModal() {
-    document.getElementById('customConfirmModal').style.display = 'none';
-    formToSubmitId = null;
-}
-
-document.getElementById('customModalConfirmBtn').addEventListener('click', function() {
-    if (formToSubmitId) {
-        document.getElementById(formToSubmitId).submit();
+    if (!modal || !modalMessage || !confirmButton) {
+        return;
     }
-    closeCustomModal();
-});
 
-document.getElementById('customConfirmModal').addEventListener('click', function(event) {
-    if (event.target === this) {
+    function openCustomModal(message, targetFormId) {
+        modalMessage.innerText = message;
+        formToSubmitId = targetFormId || null;
+        modal.hidden = false;
+    }
+
+    function closeCustomModal() {
+        modal.hidden = true;
+        formToSubmitId = null;
+    }
+
+    window.openCustomModal = openCustomModal;
+    window.closeCustomModal = closeCustomModal;
+
+    document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-confirm-target]');
+        if (trigger) {
+            openCustomModal(trigger.dataset.confirmMessage || 'Are you sure?', trigger.dataset.confirmTarget);
+            return;
+        }
+
+        if (event.target.closest('[data-modal-close]')) {
+            closeCustomModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !modal.hidden) {
+            closeCustomModal();
+        }
+    });
+
+    confirmButton.addEventListener('click', function () {
+        if (!formToSubmitId) {
+            closeCustomModal();
+            return;
+        }
+
+        const confirmationEvent = new CustomEvent('customModalConfirmed', {
+            detail: formToSubmitId,
+            cancelable: true,
+        });
+        const shouldSubmit = document.dispatchEvent(confirmationEvent);
+        const targetForm = document.getElementById(formToSubmitId);
+
+        if (shouldSubmit && targetForm) {
+            targetForm.submit();
+        }
+
         closeCustomModal();
-    }
+    });
+
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) {
+            closeCustomModal();
+        }
+    });
 });

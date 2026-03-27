@@ -101,7 +101,7 @@
                         </div>
 
                         <div class="progress booking-progress mobile-registration-progress">
-                            <div class="progress-bar bg-primary" style="width: {% if event.capacity %}{% widthratio event.ticket_count event.capacity 100 %}{% else %}0{% endif %}%"></div>
+                            <div class="progress-bar bg-primary" data-progress-value="{% if event.capacity %}{% widthratio event.ticket_count event.capacity 100 %}{% else %}0{% endif %}"></div>
                         </div>
 
                         <div class="action-cluster mobile-action-cluster">
@@ -114,13 +114,14 @@
                             </a>
 
                             <button type="button" class="btn btn-light btn-sm text-danger action-icon-btn"
-                                    onclick="openCustomModal('Are you sure you want to permanently delete this event?', 'mobileDeleteEventForm_{{ event.id }}')"
+                                    data-confirm-target="mobileDeleteEventForm_{{ event.id }}"
+                                    data-confirm-message="Are you sure you want to permanently delete this event?"
                                     title="Delete event">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
 
-                        <form method="POST" action="{% url 'delete_event' event.id %}" id="mobileDeleteEventForm_{{ event.id }}" style="display: none;">
+                        <form method="POST" action="{% url 'delete_event' event.id %}" id="mobileDeleteEventForm_{{ event.id }}" hidden>
                             {% csrf_token %}
                         </form>
                     </article>
@@ -165,7 +166,7 @@
                                             </span>
                                         </div>
                                         <div class="progress booking-progress registration-progress">
-                                            <div class="progress-bar bg-primary" style="width: {% if event.capacity %}{% widthratio event.ticket_count event.capacity 100 %}{% else %}0{% endif %}%"></div>
+                                            <div class="progress-bar bg-primary" data-progress-value="{% if event.capacity %}{% widthratio event.ticket_count event.capacity 100 %}{% else %}0{% endif %}"></div>
                                         </div>
                                         <span class="x-small text-muted mt-2 d-inline-block">Registered seats</span>
                                     </div>
@@ -181,13 +182,14 @@
                                         </a>
 
                                         <button type="button" class="btn btn-light btn-sm text-danger action-icon-btn"
-                                                onclick="openCustomModal('Are you sure you want to permanently delete this event?', 'deleteEventForm_{{ event.id }}')"
+                                                data-confirm-target="deleteEventForm_{{ event.id }}"
+                                                data-confirm-message="Are you sure you want to permanently delete this event?"
                                                 title="Delete event">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
 
-                                    <form method="POST" action="{% url 'delete_event' event.id %}" id="deleteEventForm_{{ event.id }}" style="display: none;">
+                                    <form method="POST" action="{% url 'delete_event' event.id %}" id="deleteEventForm_{{ event.id }}" hidden>
                                         {% csrf_token %}
                                     </form>
                                 </td>

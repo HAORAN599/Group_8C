@@ -1,4 +1,5 @@
 {% extends 'events/base.html' %}
+{% load static %}
 
 {% block title %}{{ event.title }} - Event Details{% endblock %}
 {% block body_class %}body-home{% endblock %}
@@ -66,7 +67,7 @@
                 <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Venue Location</h5>
                 <p class="text-muted">{{ event.location }}</p>
                 <div class="map-frame">
-                    <iframe width="100%" height="100%" frameborder="0" style="border:0"
+                    <iframe class="map-frame-embed" width="100%" height="100%" frameborder="0"
                         src="https://maps.google.com/maps?q={{ event.location|urlencode }}&t=&z=15&ie=UTF8&iwloc=&output=embed">
                     </iframe>
                 </div>
@@ -88,7 +89,7 @@
                         <div class="progress booking-progress">
                             <div class="progress-bar"
                                  id="booking-progress-bar"
-                                 style="--booking-pct: {% if event.capacity %}{% widthratio registration_count event.capacity 100 %}{% else %}0{% endif %}%; width: var(--booking-pct);"></div>
+                                 data-progress-value="{% if event.capacity %}{% widthratio registration_count event.capacity 100 %}{% else %}0{% endif %}"></div>
                         </div>
                     </div>
 
@@ -101,7 +102,7 @@
                                 <i class="bi bi-ticket-perforated me-2"></i>View My Tickets
                             </a>
                         {% else %}
-                            <form method="POST" id="ajaxBookingForm">
+                            <form method="POST" id="ajaxBookingForm" data-confirm-message="Would you like to confirm your registration for this event?" data-my-tickets-url="{% url 'my_tickets' %}">
                                 {% csrf_token %}
                                 <button type="submit" id="btn-submit" class="btn btn-primary w-100 py-3 text-white fw-bold"
                                     {% if event_has_ended or registration_count >= event.capacity %}disabled{% endif %}>
@@ -212,9 +213,9 @@
                                                 <i class="bi bi-qr-code ticket-qr-fallback"></i>
                                             </div>
                                         </div>
-                                        <p class="ticket-qr-caption">{{ user_ticket.entry_pass_caption }}</p>
                                     </div>
                                 {% endif %}
+                                <p class="ticket-qr-caption">{{ user_ticket.entry_pass_caption }}</p>
                                 <div class="ticket-side-block">
                                     <p class="ticket-side-label">Ticket Code</p>
                                     <p class="ticket-side-value ticket-side-code">{{ user_ticket.ticket_code }}</p>
@@ -244,373 +245,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>
-$(document).ready(function() {
-    if (typeof QRCode !== 'undefined') {
-        document.querySelectorAll('.ticket-qr-code').forEach(function(node) {
-            if (node.dataset.qrReady === 'true') {
-                return;
-            }
-
-            const qrValue = node.dataset.qrValue;
-            const qrSize = parseInt(node.dataset.qrSize || '132', 10);
-
-            if (!qrValue) {
-                return;
-            }
-
-            node.innerHTML = '';
-            new QRCode(node, {
-                text: qrValue,
-                width: qrSize,
-                height: qrSize,
-                colorDark: '#1f2933',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M
-            });
-            node.dataset.qrReady = 'true';
-        });
-    }
-
-    const shareButton = document.getElementById('shareEventButton');
-    const shareStatus = document.getElementById('shareEventStatus');
-    let shareStatusTimer = null;
-
-    function updateShareStatus(message, isError = false) {
-        if (!shareStatus) {
-            return;
-        }
-
-        shareStatus.textContent = message;
-        shareStatus.classList.toggle('is-error', isError);
-
-        if (shareStatusTimer) {
-            window.clearTimeout(shareStatusTimer);
-        }
-
-        if (message) {
-            shareStatusTimer = window.setTimeout(function() {
-                shareStatus.textContent = '';
-                shareStatus.classList.remove('is-error');
-            }, 2600);
-        }
-    }
-
-    async function copyShareUrl(url) {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(url);
-            return;
-        }
-
-        const tempField = document.createElement('textarea');
-        tempField.value = url;
-        tempField.setAttribute('readonly', '');
-        tempField.style.position = 'absolute';
-        tempField.style.left = '-9999px';
-        document.body.appendChild(tempField);
-        tempField.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempField);
-    }
-
-    if (shareButton) {
-        shareButton.addEventListener('click', async function() {
-            const title = this.dataset.shareTitle || document.title;
-            const text = this.dataset.shareText || 'Take a look at this event.';
-            const url = window.location.href;
-
-            try {
-                if (navigator.share) {
-                    await navigator.share({ title, text, url });
-                    updateShareStatus('Event link shared.');
-                    return;
-                }
-
-                await copyShareUrl(url);
-                updateShareStatus('Event link copied.');
-            } catch (error) {
-                if (error && error.name === 'AbortError') {
-                    return;
-                }
-
-                updateShareStatus('Unable to share right now.', true);
-            }
-        });
-    }
-
-    const checkInForm = document.getElementById('ticketCheckInForm');
-    const checkInFeedback = document.getElementById('checkInFeedback');
-    const checkedInCount = document.getElementById('checkedInCount');
-    const checkedInCountInline = document.getElementById('checkedInCountInline');
-    const scanQrButton = document.getElementById('scanQrButton');
-    const stopQrButton = document.getElementById('stopQrButton');
-    const checkInScanner = document.getElementById('checkInScanner');
-    const checkInVideo = document.getElementById('checkInVideo');
-    const checkInScannerStatus = document.getElementById('checkInScannerStatus');
-    let scannerStream = null;
-    let scannerTimer = null;
-    let scannerDetector = null;
-    let checkInInFlight = false;
-
-    function setCheckInFeedback(message, tone) {
-        if (!checkInFeedback) {
-            return;
-        }
-
-        checkInFeedback.textContent = message || '';
-        checkInFeedback.classList.remove('d-none', 'checkin-feedback-success', 'checkin-feedback-error', 'checkin-feedback-info');
-
-        if (!message) {
-            checkInFeedback.classList.add('d-none');
-            return;
-        }
-
-        checkInFeedback.classList.add('checkin-feedback-' + (tone || 'info'));
-    }
-
-    function updateCheckedInCount(count) {
-        if (checkedInCount) {
-            checkedInCount.textContent = count;
-        }
-        if (checkedInCountInline) {
-            checkedInCountInline.textContent = count;
-        }
-    }
-
-    function updateParticipantRow(payload) {
-        if (!payload || !payload.ticket_id) {
-            return;
-        }
-
-        const row = document.querySelector('[data-ticket-id="' + payload.ticket_id + '"]');
-        if (!row) {
-            return;
-        }
-
-        const statusNode = row.querySelector('[data-participant-status]');
-        if (statusNode) {
-            statusNode.textContent = payload.status_label;
-            statusNode.className = 'participant-status participant-status-' + payload.status_key;
-        }
-
-        const actionArea = row.querySelector('.participant-actions');
-        if (actionArea) {
-            actionArea.innerHTML = '<span class="participant-checkin-state is-complete">Checked In</span>';
-        }
-    }
-
-    async function submitCheckIn(formElement) {
-        if (!formElement || checkInInFlight) {
-            return;
-        }
-
-        const submitButton = formElement.querySelector('button[type="submit"]');
-        const originalLabel = submitButton ? submitButton.innerHTML : '';
-        const formData = new FormData(formElement);
-        const csrfToken = formElement.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-
-        checkInInFlight = true;
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Checking...';
-        }
-
-        try {
-            const response = await fetch(formElement.action, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrfToken,
-                },
-                body: formData,
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw data;
-            }
-
-            setCheckInFeedback(data.message, 'success');
-            updateCheckedInCount(data.checked_in_count);
-            updateParticipantRow(data);
-
-            const codeInput = checkInForm ? checkInForm.querySelector('input[name="ticket_code"]') : null;
-            if (codeInput) {
-                codeInput.value = '';
-            }
-        } catch (error) {
-            setCheckInFeedback((error && error.message) || 'Unable to check in this attendee right now.', 'error');
-        } finally {
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalLabel;
-            }
-            checkInInFlight = false;
-        }
-    }
-
-    if (checkInForm) {
-        checkInForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            submitCheckIn(checkInForm);
-        });
-    }
-
-    document.querySelectorAll('.participant-checkin-form').forEach(function(formElement) {
-        formElement.addEventListener('submit', function(event) {
-            event.preventDefault();
-            submitCheckIn(formElement);
-        });
-    });
-
-    function stopScanner() {
-        if (scannerTimer) {
-            window.clearInterval(scannerTimer);
-            scannerTimer = null;
-        }
-
-        if (scannerStream) {
-            scannerStream.getTracks().forEach(function(track) {
-                track.stop();
-            });
-            scannerStream = null;
-        }
-
-        if (checkInVideo) {
-            checkInVideo.pause();
-            checkInVideo.srcObject = null;
-        }
-
-        if (checkInScanner) {
-            checkInScanner.classList.add('d-none');
-        }
-    }
-
-    async function startScanner() {
-        if (!checkInScanner || !checkInVideo || !checkInForm) {
-            return;
-        }
-
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            setCheckInFeedback('Camera access is not available on this device. Use the ticket code instead.', 'info');
-            return;
-        }
-
-        if (!('BarcodeDetector' in window)) {
-            setCheckInFeedback('QR scanning is not supported here yet. Use the ticket code instead.', 'info');
-            return;
-        }
-
-        try {
-            scannerDetector = new BarcodeDetector({ formats: ['qr_code'] });
-            scannerStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: 'environment' },
-                },
-                audio: false,
-            });
-
-            checkInVideo.srcObject = scannerStream;
-            await checkInVideo.play();
-            checkInScanner.classList.remove('d-none');
-            checkInScannerStatus.textContent = 'Scanning for a ticket QR code...';
-
-            scannerTimer = window.setInterval(async function() {
-                if (!scannerDetector || checkInInFlight || checkInVideo.readyState < 2) {
-                    return;
-                }
-
-                try {
-                    const codes = await scannerDetector.detect(checkInVideo);
-                    if (!codes.length || !codes[0].rawValue) {
-                        return;
-                    }
-
-                    const codeInput = checkInForm.querySelector('input[name="ticket_code"]');
-                    if (!codeInput) {
-                        return;
-                    }
-
-                    codeInput.value = codes[0].rawValue.trim().toUpperCase();
-                    checkInScannerStatus.textContent = 'Ticket found. Checking in attendee...';
-                    stopScanner();
-                    submitCheckIn(checkInForm);
-                } catch (scanError) {
-                    checkInScannerStatus.textContent = 'Unable to read that code yet. Try holding it a bit steadier.';
-                }
-            }, 500);
-        } catch (error) {
-            stopScanner();
-            setCheckInFeedback('Camera access was blocked. Use the ticket code instead.', 'error');
-        }
-    }
-
-    if (scanQrButton) {
-        scanQrButton.addEventListener('click', function() {
-            startScanner();
-        });
-    }
-
-    if (stopQrButton) {
-        stopQrButton.addEventListener('click', function() {
-            stopScanner();
-            if (checkInScannerStatus) {
-                checkInScannerStatus.textContent = 'Scanner stopped.';
-            }
-        });
-    }
-
-    // Intercept form submission to use AJAX instead
-    $('#ajaxBookingForm').on('submit', function(e) {
-        e.preventDefault(); 
-        // Trigger the confirmation modal before proceeding
-        openCustomModal("Would you like to confirm your registration for this event?", 'ajaxBookingForm');
-    });
-
-    // Listen for custom modal confirmation event
-    document.addEventListener('customModalConfirmed', function(e) {
-        if (e.detail === 'ajaxBookingForm') {
-            executeAjaxBooking();
-        }
-    });
-
-    function executeAjaxBooking() {
-        const btn = $('#btn-submit');
-        // Visual feedback during processing
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Confirming...');
-
-        $.ajax({
-            type: 'POST',
-            url: window.location.href,
-            data: $('#ajaxBookingForm').serialize(),
-            headers: {'X-Requested-With': 'XMLHttpRequest'}, // Identifying AJAX request for Django
-            success: function(response) {
-                // Update stats and progress bar dynamically
-                $('#booked-count').text(response.current_count);
-                const newPct = response.capacity ? (response.current_count / response.capacity) * 100 : 0;
-                $('#booking-progress-bar').css('width', newPct + '%');
-
-                // Update the UI area with a success state without page reload
-                $('#booking-action-area').fadeOut(300, function() {
-                    $(this).html(`
-                        <div class="booking-success-banner text-center py-3 mb-3">
-                            <i class="bi bi-check-circle-fill me-2"></i><strong>Registration confirmed</strong>
-                        </div>
-                        <a href="{% url 'my_tickets' %}" class="btn btn-outline-primary w-100 py-3 fw-bold">
-                            <i class="bi bi-ticket-perforated me-2"></i>View My Tickets
-                        </a>
-                    `).fadeIn(300);
-                });
-            },
-            error: function(xhr) {
-                // Error handling: Alert user and revert button state
-                alert(xhr.responseJSON ? xhr.responseJSON.message : "An error occurred during booking.");
-                btn.prop('disabled', false).text('Register for Event');
-            }
-        });
-    }
-});
-</script>
+<script src="{% static 'events/js/qr-codes.js' %}"></script>
+<script src="{% static 'events/js/event-detail.js' %}"></script>
 {% endblock %}

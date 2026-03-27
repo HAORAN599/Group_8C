@@ -144,7 +144,8 @@
                     <button
                         type="button"
                         class="btn btn-outline-danger settings-delete-btn"
-                        onclick="openCustomModal('Delete your account permanently? This action cannot be undone.', 'deleteAccountForm')">
+                        data-confirm-target="deleteAccountForm"
+                        data-confirm-message="Delete your account permanently? This action cannot be undone.">
                         Delete Account
                     </button>
                 </form>

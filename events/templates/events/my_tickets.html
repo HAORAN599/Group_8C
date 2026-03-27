@@ -63,13 +63,14 @@
                                     <a href="{% url 'event_detail' ticket.event.id %}" class="btn btn-light btn-sm px-3">View Event</a>
                                     {% if ticket.display_status_key == 'valid' or ticket.display_status_key == 'upcoming' %}
                                         <button type="button" class="btn btn-outline-danger btn-sm px-3"
-                                                onclick="openCustomModal('Are you sure you want to cancel this ticket?', 'cancelForm_{{ ticket.id }}')">
+                                                data-confirm-target="cancelForm_{{ ticket.id }}"
+                                                data-confirm-message="Are you sure you want to cancel this ticket?">
                                             Cancel Ticket
                                         </button>
                                     {% endif %}
                                 </div>
 
-                                <form method="POST" action="{% url 'cancel_ticket' ticket.id %}" id="cancelForm_{{ ticket.id }}" style="display: none;">
+                                <form method="POST" action="{% url 'cancel_ticket' ticket.id %}" id="cancelForm_{{ ticket.id }}" hidden>
                                     {% csrf_token %}
                                 </form>
                             </div>
@@ -87,9 +88,9 @@
                                             <i class="bi bi-qr-code ticket-qr-fallback"></i>
                                         </div>
                                     </div>
-                                    <p class="ticket-qr-caption">{{ ticket.entry_pass_caption }}</p>
                                 </div>
                             {% endif %}
+                            <p class="ticket-qr-caption">{{ ticket.entry_pass_caption }}</p>
                             <div class="ticket-side-meta-row">
                                 <div class="ticket-side-block">
                                 <p class="ticket-side-label">Issued</p>
@@ -119,35 +120,5 @@
 
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof QRCode === 'undefined') {
-        return;
-    }
-
-    document.querySelectorAll('.ticket-qr-code').forEach(function(node) {
-        if (node.dataset.qrReady === 'true') {
-            return;
-        }
-
-        const qrValue = node.dataset.qrValue;
-        const qrSize = parseInt(node.dataset.qrSize || '148', 10);
-
-        if (!qrValue) {
-            return;
-        }
-
-        node.innerHTML = '';
-        new QRCode(node, {
-            text: qrValue,
-            width: qrSize,
-            height: qrSize,
-            colorDark: '#1f2933',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
-        });
-        node.dataset.qrReady = 'true';
-    });
-});
-</script>
+<script src="{% static 'events/js/qr-codes.js' %}"></script>
 {% endblock %}
