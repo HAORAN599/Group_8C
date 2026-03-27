@@ -1,79 +1,72 @@
 # University Society Event & Ticketing Manager
 
-##  Project Overview
-This is a Django-based web application designed for university societies to manage event publishing and ticket bookings. The system empowers society administrators to handle logistics while providing students with a seamless experience to discover and join events.
+## Project Overview
 
+This Django web app helps university societies create and manage events, while giving students an easy way to discover what is happening on campus and book tickets.
 
-* **Live Demo**: [https://haoranwei.pythonanywhere.com/](https://haoranwei.pythonanywhere.com/)
-* **GitHub Repository**: [https://github.com/HAORAN599/Group_8C](https://github.com/HAORAN599/Group_8C)
+- Live Demo: [https://haoranwei.pythonanywhere.com/](https://haoranwei.pythonanywhere.com/)
+- GitHub Repository: [https://github.com/HAORAN599/Group_8C](https://github.com/HAORAN599/Group_8C)
 
 ---
 
-##  Key Features
+## Key Features
 
 ### Administrator Features
-* **Event Management (CRUD)**: Create, edit, and delete society events with ease.
-* **Ticketing Control**: Set available ticket quotas and enforce maximum capacity limits for every event.
+
+- Event Management (CRUD): Society admins can create, edit, and remove events from one place.
+- Ticketing Control: Each event can have a booking limit, so registrations stop once it is full.
 
 ### Student & User Features
-* **Event Discovery**: Integrated search functionality to find specific events quickly.
-* **Map Integration**: View exact event locations via an interactive map on the booking page.
-* **Email Notifications**: Receive automated confirmation emails upon booking, including **Booking ID**, **Venue**, and event details.
-* **My Tickets**: A dedicated dashboard to view all booked events and perform bulk cancellations if plans change.
+
+- Event Discovery: Students can quickly search for events by keyword and browse what is coming up.
+- Map Integration: Each booking page includes a map so users can easily find the venue.
+- Email Notifications: After booking, users receive a confirmation email with their booking details, venue, and ticket information.
+- My Tickets: Students can view all of their bookings in one place and cancel them if their plans change.
 
 ### Account Management
-* **Profile Customization**: Users can update their personal information at any time.
-* **Account Deletion**: Users have the autonomy to close and delete their accounts if they are no longer needed.
+
+- Profile Customization: Users can update their details whenever they need to.
+- Account Deletion: Users can delete their account if they no longer want to use the system.
 
 ---
 
 ## 🛠️ Technology Stack
-* **Backend**: Django (Python 3.11)
-* **Environment Management**: `venv` (Virtual Environment)
-* **Mapping**: Google Maps Embed
-* **Emailing**: Django SMTP Backend
+
+- Backend: Django with Python 3.11
+- Environment Management: `venv` for managing the local development environment
+- Mapping: Google Maps Embed for showing event locations
+- Emailing: Django SMTP backend for booking confirmation emails
 
 ---
 
 ## 🚀 Local Setup Guide
 
-### 1. Clone the Repository
+To run the project locally:
+
+1. Clone the repository.
+2. Create and activate a virtual environment.
+3. Install the required packages.
+4. Run the migrations and add the sample data.
+5. Start the development server.
+
 ```bash
 git clone https://github.com/HAORAN599/Group_8C.git
-```
-
-### 2. Configure Virtual Environment
-```bash
-# Create the virtual environment
+cd Group_8C
 python -m venv venv
-
-# Activate the environment (Windows)
 .\venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
-```
-### 3. Database Initialization
-```bash
 python manage.py makemigrations
 python manage.py migrate
-
-# Populate the database with initial society and event data
 python population_script.py
-```
-### 4. Run the Development Server
-```bash
 python manage.py runserver
 ```
 
-### 5. Run the Test Suite
-```bash
-python manage.py test
-```
+To run the test suite, use `python manage.py test`.
 
-The application can be recreated on a fresh machine by installing the packages from `requirements.txt`, running migrations, and then executing `population_script.py` to load sample data.
+The project can be set up on another machine by installing the packages from `requirements.txt`, running the migrations, and then using `population_script.py` to add sample data.
 
 ---
 
 ## 📌 External Sources
-This project uses Bootstrap 5, Bootstrap Icons, jQuery, QRCode.js, and Google Maps Embed for layout, styling, interactivity, QR generation, and location display.
+
+This project uses Bootstrap 5, Bootstrap Icons, jQuery, QRCode.js, and Google Maps Embed to handle styling, interactivity, QR code generation, and location display.
